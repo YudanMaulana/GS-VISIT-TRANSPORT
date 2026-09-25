@@ -191,7 +191,7 @@ class _TransporterDashboardPageState extends State<TransporterDashboardPage> {
                     Expanded(
                       child: ListView.separated(
                         itemCount: _transporters.length,
-                        separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.06)),
+                        separatorBuilder: (_, _) => Divider(color: Colors.white.withValues(alpha: 0.06)),
                         itemBuilder: (context, index) {
                           final row = _transporters[index];
                           return ListTile(

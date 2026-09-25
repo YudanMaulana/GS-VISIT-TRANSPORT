@@ -267,7 +267,7 @@ class _TransporterCheckinPageState extends State<TransporterCheckinPage> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _loadType,
+                              initialValue: _loadType,
                               dropdownColor: const Color(0xFF0F1A2E),
                               style: const TextStyle(color: Colors.white, fontSize: 13),
                               decoration: InputDecoration(

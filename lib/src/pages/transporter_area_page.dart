@@ -183,7 +183,7 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
                           : ListView.separated(
                               padding: const EdgeInsets.all(16),
                               itemCount: list.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   Divider(color: Colors.white.withValues(alpha: 0.06)),
                               itemBuilder: (context, index) {
                                 final row = list[index];

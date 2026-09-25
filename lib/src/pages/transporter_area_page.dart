@@ -192,12 +192,38 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
                                     backgroundColor: Colors.amber.withValues(alpha: 0.15),
                                     child: const Icon(Icons.local_shipping, color: Colors.amber),
                                   ),
-                                  title: Text(
-                                    row.name.isNotEmpty ? row.name : 'Pengemudi Transporter',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  title: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          row.name.isNotEmpty ? row.name : 'Pengemudi Transporter',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: (row.loadType == 'bongkar' ? Colors.blue : Colors.orange).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: (row.loadType == 'bongkar' ? Colors.blue : Colors.orange).withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '#${row.queueNumber ?? row.planId} • ${(row.loadType.isNotEmpty ? row.loadType.toUpperCase() : "TRANSPORTER")}',
+                                          style: TextStyle(
+                                            color: row.loadType == 'bongkar' ? Colors.blueAccent : Colors.orangeAccent,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 4),

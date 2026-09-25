@@ -758,6 +758,7 @@ class ActiveGuestRow {
   /// Papan adalah daftar, bukan surat jalan: sisanya dibuka di detail.
   final int loadCount;
   final String firstShipmentNo;
+  final int? queueNumber;
 
   bool get isTransporter => visitorType == 'transporter';
 
@@ -785,6 +786,7 @@ class ActiveGuestRow {
     this.loadType = '',
     this.loadCount = 0,
     this.firstShipmentNo = '',
+    this.queueNumber,
   });
 
   /// Still physically on site: checked in, not yet checked out.
@@ -818,6 +820,7 @@ class ActiveGuestRow {
     loadType: j['load_type'] as String? ?? '',
     loadCount: (j['load_count'] as num?)?.toInt() ?? 0,
     firstShipmentNo: j['first_shipment_no'] as String? ?? '',
+    queueNumber: (j['queue_number'] as num?)?.toInt() ?? (j['plan_id'] as num?)?.toInt(),
   );
 }
 

@@ -118,9 +118,35 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                     ),
                                     child: const Icon(Icons.history, color: Colors.amber, size: 20),
                                   ),
-                                  title: Text(
-                                    log['action']?.toString() ?? 'Aktivitas Transporter',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  title: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          log['action']?.toString() ?? 'Aktivitas Transporter',
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (log['queue_number'] != null || log['plan_id'] != null) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.amber.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                                          ),
+                                          child: Text(
+                                            'Antrean #${log['queue_number'] ?? log['plan_id']}',
+                                            style: const TextStyle(
+                                              color: Colors.amberAccent,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                   subtitle: Text(
                                     'Petugas: ${log["officer"] ?? "-"} • Nopol: ${log["plate_number"] ?? "-"} • ${log["timestamp"] ?? ""}',

@@ -98,6 +98,11 @@ class _TransporterCheckoutPageState extends State<TransporterCheckoutPage> {
       return;
     }
 
+    if (_selected!.loadCount == 0) {
+      setState(() => _error = 'Data barang muatan armada ini belum tercatat. Lengkapi catatan muatan sebelum konfirmasi keluar.');
+      return;
+    }
+
     final pngBytes = await _padKey.currentState?.toPng();
     if (pngBytes == null) {
       setState(() => _error = 'Tanda tangan tidak valid atau kosong.');

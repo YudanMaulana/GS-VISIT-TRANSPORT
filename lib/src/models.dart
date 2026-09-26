@@ -761,6 +761,8 @@ class ActiveGuestRow {
   final int? queueNumber;
 
   bool get isTransporter => visitorType == 'transporter';
+  bool get dibatalkan =>
+      status == 'expired' || status == 'cancelled' || status == 'batal';
 
   ActiveGuestRow({
     required this.planId,
@@ -789,8 +791,8 @@ class ActiveGuestRow {
     this.queueNumber,
   });
 
-  /// Still physically on site: checked in, not yet checked out.
-  bool get onSite => checkinAt != null && checkoutAt == null;
+  /// Still physically on site: checked in, not yet checked out, and not cancelled.
+  bool get onSite => checkinAt != null && checkoutAt == null && !dibatalkan;
 
   factory ActiveGuestRow.fromJson(Map<String, dynamic> j) => ActiveGuestRow(
     planId: (j['plan_id'] as num?)?.toInt() ?? 0,

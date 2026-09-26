@@ -69,6 +69,12 @@ class _TransporterCheckinPageState extends State<TransporterCheckinPage> {
       setState(() => _error = 'Tanda tangan tidak valid atau kosong.');
       return;
     }
+
+    if (_loadType == 'bongkar' && _loadDescription.text.trim().isEmpty) {
+      setState(() => _error = 'Untuk alur bongkar, rincian barang muatan wajib diisi sebelum konfirmasi masuk.');
+      return;
+    }
+
     final signatureB64 = base64Encode(pngBytes);
 
     setState(() {

@@ -224,7 +224,7 @@ class _TransporterDashboardPageState extends State<TransporterDashboardPage> {
                                     ),
                                   ),
                                   child: Text(
-                                    '#${row.queueNumber ?? row.planId} • ${(row.loadType.isNotEmpty ? row.loadType.toUpperCase() : "TRANSPORTER")}',
+                                    '${row.queueNumber != null ? "#${row.queueNumber}" : (row.status == "planned" ? "Menunggu Masuk" : "#${row.planId}")} • ${(row.loadType.isNotEmpty ? row.loadType.toUpperCase() : "TRANSPORTER")}${row.areaName.isNotEmpty ? " • ${row.areaName}" : ""}',
                                     style: TextStyle(
                                       color: row.loadType == 'bongkar' ? Colors.blueAccent : Colors.orangeAccent,
                                       fontSize: 10,
@@ -235,7 +235,7 @@ class _TransporterDashboardPageState extends State<TransporterDashboardPage> {
                               ],
                             ),
                             subtitle: Text(
-                              'Antrean: #${row.queueNumber ?? row.planId} • Nopol: ${row.vehiclePlate.isNotEmpty ? row.vehiclePlate : "-"} • Ekspedisi: ${row.company.isNotEmpty ? row.company : "-"} • Masuk: ${_formatTime(row.checkinAt)}',
+                              'Antrean: ${row.queueNumber != null ? "#${row.queueNumber}" : (row.status == "planned" ? "Menunggu Gerbang" : "#${row.planId}")}${row.areaName.isNotEmpty ? " (${row.areaName})" : ""} • Nopol: ${row.vehiclePlate.isNotEmpty ? row.vehiclePlate : "-"} • Ekspedisi: ${row.company.isNotEmpty ? row.company : "-"} • Masuk: ${_formatTime(row.checkinAt)}',
                               style: const TextStyle(color: Colors.white60, fontSize: 12),
                             ),
                             trailing: ElevatedButton(

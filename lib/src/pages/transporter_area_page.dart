@@ -215,7 +215,7 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
                                           ),
                                         ),
                                         child: Text(
-                                          '#${row.queueNumber ?? row.planId} • ${(row.loadType.isNotEmpty ? row.loadType.toUpperCase() : "TRANSPORTER")}',
+                                          '${row.queueNumber != null ? "#${row.queueNumber}" : (row.status == "planned" ? "Menunggu Masuk" : "#${row.planId}")} • ${(row.loadType.isNotEmpty ? row.loadType.toUpperCase() : "TRANSPORTER")}${row.areaName.isNotEmpty ? " • ${row.areaName}" : ""}',
                                           style: TextStyle(
                                             color: row.loadType == 'bongkar' ? Colors.blueAccent : Colors.orangeAccent,
                                             fontSize: 10,

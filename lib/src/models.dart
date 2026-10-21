@@ -759,6 +759,9 @@ class ActiveGuestRow {
   final int loadCount;
   final String firstShipmentNo;
   final int? queueNumber;
+  final int? areaId;
+  final String areaName;
+  final String areaCode;
 
   bool get isTransporter => visitorType == 'transporter';
   bool get dibatalkan =>
@@ -789,41 +792,55 @@ class ActiveGuestRow {
     this.loadCount = 0,
     this.firstShipmentNo = '',
     this.queueNumber,
+    this.areaId,
+    this.areaName = '',
+    this.areaCode = '',
   });
 
   /// Still physically on site: checked in, not yet checked out, and not cancelled.
   bool get onSite => checkinAt != null && checkoutAt == null && !dibatalkan;
 
-  factory ActiveGuestRow.fromJson(Map<String, dynamic> j) => ActiveGuestRow(
-    planId: (j['plan_id'] as num?)?.toInt() ?? 0,
-    visitorId: (j['visitor_id'] as num?)?.toInt() ?? 0,
-    name: j['name'] as String? ?? '',
-    company: j['company'] as String? ?? '',
-    picTarget: j['pic_target'] as String? ?? '',
-    purpose: j['purpose'] as String? ?? '',
-    phone: j['phone'] as String? ?? '',
-    status: j['status'] as String? ?? '',
-    photoUrl: j['photo_url'] as String? ?? '',
-    checkinAt: _serverDate(j['checkin_at']),
-    checkoutAt: _serverDate(j['checkout_at']),
-    formComplete: j['form_complete'] == true,
-    checkoutComplete: j['checkout_complete'] == true,
-    currentStep: (j['current_step'] as num?)?.toInt() ?? 0,
-    missingFields: [for (final f in (j['missing_fields'] as List? ?? [])) '$f'],
-    // Belum dikirim server per 2026-08-30 (lihat
-    // prompt-server-papan-data-transporter.md) -- membaca kuncinya di
-    // sini sekarang supaya begitu server menyusulnya, papan langsung
-    // terisi tanpa perubahan client lagi.
-    visitorType: j['visitor_type'] as String? ?? 'tamu',
-    simExpiresAt: j['sim_expires_at'] as String? ?? '',
-    simExpired: j['sim_expired'] == true,
-    vehiclePlate: j['vehicle_plate'] as String? ?? '',
-    vehicleType: j['vehicle_type'] as String? ?? '',
-    loadType: j['load_type'] as String? ?? '',
-    loadCount: (j['load_count'] as num?)?.toInt() ?? 0,
-    firstShipmentNo: j['first_shipment_no'] as String? ?? '',
-    queueNumber: (j['queue_number'] as num?)?.toInt() ?? (j['plan_id'] as num?)?.toInt(),
-  );
+  factory ActiveGuestRow.fromJson(Map<String, dynamic> j) {
+    int? qNum = (j['queue_number'] as num?)?.toInt();
+    final st = j['status'] as String? ?? '';
+    // Jika masih planned dan server belum mengisi queue_number, jangan fallback ke plan_id
+    if (qNum == null && (st == 'checked_in' || st == 'signed' || st == 'checked_out')) {
+      qNum = (j['plan_id'] as num?)?.toInt();
+    }
+
+    return ActiveGuestRow(
+      planId: (j['plan_id'] as num?)?.toInt() ?? 0,
+      visitorId: (j['visitor_id'] as num?)?.toInt() ?? 0,
+      name: j['name'] as String? ?? '',
+      company: j['company'] as String? ?? '',
+      picTarget: j['pic_target'] as String? ?? '',
+      purpose: j['purpose'] as String? ?? '',
+      phone: j['phone'] as String? ?? '',
+      status: st,
+      photoUrl: j['photo_url'] as String? ?? '',
+      checkinAt: _serverDate(j['checkin_at']),
+      checkoutAt: _serverDate(j['checkout_at']),
+      formComplete: j['form_complete'] == true,
+      checkoutComplete: j['checkout_complete'] == true,
+      currentStep: (j['current_step'] as num?)?.toInt() ?? 0,
+      missingFields: [for (final f in (j['missing_fields'] as List? ?? [])) '$f'],
+      visitorType: j['visitor_type'] as String? ?? 'tamu',
+      simExpiresAt: j['sim_expires_at'] as String? ?? '',
+      simExpired: j['sim_expired'] == true,
+      vehiclePlate: j['vehicle_plate'] as String? ?? '',
+      vehicleType: j['vehicle_type'] as String? ?? '',
+      loadType: j['load_type'] as String? ?? '',
+      loadCount: (j['load_count'] as num?)?.toInt() ?? 0,
+      firstShipmentNo: j['first_shipment_no'] as String? ?? '',
+      queueNumber: qNum,
+      areaId: (j['area_id'] as num?)?.toInt() ??
+          (j['area'] is Map ? ((j['area'] as Map)['id'] as num?)?.toInt() : null),
+      areaName: j['area_name'] as String? ??
+          (j['area'] is Map ? (j['area'] as Map)['name']?.toString() ?? '' : ''),
+      areaCode: j['area_code'] as String? ??
+          (j['area'] is Map ? (j['area'] as Map)['code']?.toString() ?? '' : ''),
+    );
+  }
 }
 
 /// `GET /api/active-guests/today`: the board plus its counters and the date

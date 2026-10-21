@@ -8,16 +8,12 @@ import '../theme.dart';
 /// differ in data, not in chrome.
 
 BoxDecoration consolePanel({bool subtle = false}) => BoxDecoration(
-      color: subtle
-          ? AppTheme.panel.withValues(alpha: 0.35)
-          : AppTheme.panel.withValues(alpha: 0.65),
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
       border: Border.all(
-        color: subtle
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.white.withValues(alpha: 0.10),
+        color: subtle ? borderColor.withValues(alpha: 0.5) : borderColor,
       ),
-      boxShadow: subtle ? null : AppTheme.softShadow(0.12),
+      boxShadow: subtle ? null : AppTheme.softShadow(0.08),
     );
 
 /// Page title + one line of context, with optional icon, badge, and right-aligned controls.
@@ -41,9 +37,9 @@ class ConsoleHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+          bottom: BorderSide(color: borderColor),
         ),
       ),
       child: Row(

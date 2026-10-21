@@ -3,8 +3,10 @@ import '../admin_auth.dart';
 import '../api_client.dart';
 import '../config.dart';
 import '../google_desktop_auth.dart';
+import '../theme.dart';
+import 'common_widgets.dart';
 
-/// Dialog Login Google Admin untuk GS VISIT TRANSPORT.
+/// Dialog Login Google Admin untuk GS VISIT TRANSPORT berpenampilan senada FaceID Desktop.
 class AdminLoginDialog extends StatefulWidget {
   final AppConfig config;
   final AdminSession session;
@@ -113,14 +115,14 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
         width: 480,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F1A2E),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          boxShadow: [
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: borderColor),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 32,
-              offset: const Offset(0, 16),
+              color: Color(0x1F0F3D91),
+              blurRadius: 36,
+              offset: Offset(0, 16),
             ),
           ],
         ),
@@ -131,17 +133,22 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 52,
+                  height: 52,
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    color: brandBlueSoft,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
                   ),
-                  child: const Icon(
-                    Icons.local_shipping_outlined,
-                    color: Colors.amber,
-                    size: 26,
+                  child: Image.asset(
+                    'assets/branding/logo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.local_shipping_rounded,
+                      color: brandBlue,
+                      size: 28,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -150,40 +157,45 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'GS VISIT TRANSPORT',
+                        'GARUDASHIELD',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: textPrimary,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Konsol Admin & Logistik Transporter',
-                        style: TextStyle(color: Colors.white60, fontSize: 12),
+                        'TRANSPORTER • LOGIN PETUGAS',
+                        style: TextStyle(
+                          color: brandBlue,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                color: brandBlueSoft.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber, size: 20),
+                  Icon(Icons.info_outline_rounded, color: brandBlue, size: 20),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Masuk dengan Akun Google yang telah didaftarkan administrator server via CLI.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                      'Silakan masuk menggunakan Akun Google Petugas yang terdaftar pada sistem keamanan GarudaFood.',
+                      style: TextStyle(color: textPrimary, fontSize: 12.5, height: 1.4, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -192,20 +204,20 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
             if (_error != null) ...[
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  color: const Color(0xFFFFF0F0),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFFC0C0)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
+                    const Icon(Icons.error_outline_rounded, color: Color(0xFFD64045), size: 18),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        style: const TextStyle(color: Color(0xFFD64045), fontSize: 12.5, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -213,78 +225,67 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
               ),
             ],
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: _busy ? null : _loginGoogle,
               icon: _busy
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.login, size: 20),
+                  : const Icon(Icons.login_rounded, size: 20),
               label: Text(
-                _busy ? 'Menghubungkan ke Google...' : 'Masuk dengan Google',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                _busy ? 'Menghubungkan ke Google...' : 'Masuk dengan Akun Google',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black87,
+              style: FilledButton.styleFrom(
+                backgroundColor: brandBlue,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
             ),
             const SizedBox(height: 16),
             TextButton.icon(
               onPressed: () => setState(() => _showSettings = !_showSettings),
               icon: Icon(
-                _showSettings ? Icons.expand_less : Icons.settings_outlined,
+                _showSettings ? Icons.expand_less_rounded : Icons.settings_outlined,
                 size: 16,
-                color: Colors.white60,
+                color: textMuted,
               ),
               label: Text(
                 _showSettings ? 'Sembunyikan Pengaturan' : 'Pengaturan Server & OAuth',
-                style: const TextStyle(color: Colors.white60, fontSize: 12),
+                style: const TextStyle(color: textMuted, fontSize: 12.5, fontWeight: FontWeight.w700),
               ),
             ),
             if (_showSettings) ...[
               const SizedBox(height: 12),
-              TextField(
+              InputField(
+                label: 'URL Server Backend',
                 controller: _serverUrl,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'URL Server Backend',
-                  labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                hintText: 'http://127.0.0.1:8000',
               ),
               const SizedBox(height: 10),
-              TextField(
+              InputField(
+                label: 'Google Client ID (Desktop)',
                 controller: _clientId,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Google Client ID (Desktop)',
-                  labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                hintText: 'xxxxxx.apps.googleusercontent.com',
               ),
               const SizedBox(height: 10),
-              TextField(
+              InputField(
+                label: 'Google Client Secret',
                 controller: _clientSecret,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Google Client Secret',
-                  labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                hintText: 'GOCSPX-xxxxxx',
               ),
             ],
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal', style: TextStyle(color: textMuted, fontWeight: FontWeight.w700)),
+              ),
+            ),
           ],
         ),
       ),

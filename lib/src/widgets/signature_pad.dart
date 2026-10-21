@@ -99,8 +99,8 @@ class SignaturePadState extends State<SignaturePad> {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.muted.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor),
             ),
             child: CustomPaint(
               painter: _PelukisTtd(_goresan),

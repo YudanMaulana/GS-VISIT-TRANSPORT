@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// Garudashield palette shared with the Windows FaceID admin desk.
-///
-/// The Linux Visit app still has camera-first surfaces, so it keeps a deep
-/// operational canvas. Navigation, panels, buttons, and status furniture follow
-/// the FaceID desktop language: navy gradient, gold accents, restrained borders.
+// Brand colors matching Garuda Shield FaceID Windows Desktop App
+const brandBlue = Color(0xFF0F3D91);
+const brandBlueStrong = Color(0xFF1249AB);
+const brandBlueDeep = Color(0xFF0A2558);
+const brandBlueSoft = Color(0xFFEAF2FF);
+const brandYellow = Color(0xFFF4C300);
+const brandMint = Color(0xFF5BDFC1);
+const brandCoral = Color(0xFFFF8C6B);
+const appBackground = Color(0xFFF3F7FF);
+const surfaceColor = Colors.white;
+const panelColor = Color(0xFFF6FAFF);
+const previewColor = Color(0xFF112B57);
+const panelAccent = Color(0xFFE1ECFF);
+const overlaySurface = Color(0xFF091B3E);
+const textPrimary = Color(0xFF10233F);
+const textMuted = Color(0xFF5B7290);
+const borderColor = Color(0xFFC7D7F0);
+const successColor = Color(0xFF0F7A5C);
+const warningColor = Color(0xFFC98B00);
+const shadowColor = Color(0x1F143B7A);
+
 class AppTheme {
   // Brand
   static const brandBlue = Color(0xFF0F3D91);
@@ -16,165 +32,110 @@ class AppTheme {
   static const brandBlueSoft = Color(0xFFEAF2FF);
 
   // Surfaces
-  static const bg = Color(0xFF071634);
-  static const bgGradientTop = Color(0xFF0A2558);
-  static const bgGradientMid = Color(0xFF0F3D91);
-  static const bgGradientBottom = Color(0xFF071634);
-  static const panel = Color(0xFF0D2A5E);
-  static const panelAlt = Color(0xFF14386F);
-  static const panelRaised = Color(0xFF173F7B);
-  static const panelSoft = Color(0xFF102F66);
-  static const outline = Color(0xFF315B9D);
+  static const bg = Color(0xFFF3F7FF);
+  static const panel = Colors.white;
+  static const panelAlt = Color(0xFFF6FAFF);
+  static const panelRaised = Colors.white;
+  static const panelSoft = Color(0xFFEAF2FF);
+  static const outline = Color(0xFFC7D7F0);
 
   // Text
-  static const fg = Color(0xFFEAF2FF);
-  static const muted = Color(0xFF9DBCF0);
-  static const mutedStrong = Color(0xFFC7D7F0);
+  static const fg = Color(0xFF10233F);
+  static const muted = Color(0xFF5B7290);
+  static const mutedStrong = Color(0xFF10233F);
 
   // Status
-  static const okGreen = Color(0xFF5BDFC1);
-  static const badRed = Color(0xFFFF6B6B);
-  static const warnAmber = Color(0xFFF4C300);
-  static const accent = Color(0xFF7CC6FF);
+  static const okGreen = Color(0xFF0F7A5C);
+  static const badRed = Color(0xFFD64045);
+  static const warnAmber = Color(0xFFC98B00);
+  static const accent = Color(0xFF0F3D91);
 
-  /// Resolved from the system via fontconfig (Ubuntu ships it as `fonts-ubuntu`),
-  /// with a DejaVu Sans fallback so a box without it still renders.
-  static const fontFamily = 'Ubuntu';
-  static const _fontFallback = <String>['Ubuntu', 'DejaVu Sans'];
-
-  static const backgroundGradient = LinearGradient(
-    colors: [Color(0xFF061A3C), bgGradientTop, bgGradientBottom],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const panelGradient = LinearGradient(
-    colors: [Color(0xE6153973), Color(0xCC0A2558)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static List<BoxShadow> softShadow([double alpha = 0.22]) => [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: alpha),
-      blurRadius: 28,
-      offset: const Offset(0, 16),
-    ),
-  ];
-
-  static const glassBorder = Color(0x24FFFFFF);
-  static const glassBorderHighlight = Color(0x3DF4C300);
-
-  static BoxDecoration cardDecoration({
-    Color? color,
-    BorderRadius? borderRadius,
-    Border? border,
-    List<BoxShadow>? shadows,
-  }) =>
-      BoxDecoration(
-        color: color ?? panel.withValues(alpha: 0.55),
-        borderRadius: borderRadius ?? BorderRadius.circular(16),
-        border: border ?? Border.all(color: glassBorder),
-        boxShadow: shadows ?? softShadow(0.14),
-      );
-
-  static ThemeData dark() {
-    final base = ThemeData.dark(useMaterial3: true);
-    return base.copyWith(
-      scaffoldBackgroundColor: bg,
-      colorScheme: base.colorScheme.copyWith(
-        primary: brandGold,
-        onPrimary: brandBlueDeep,
-        secondary: accent,
-        surface: panel,
-      ),
-      dividerColor: outline.withValues(alpha: 0.35),
-      cardTheme: CardThemeData(
-        color: panel.withValues(alpha: 0.65),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: glassBorder),
+  static List<BoxShadow> softShadow([double alpha = 0.08]) => [
+        BoxShadow(
+          color: shadowColor.withValues(alpha: alpha),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
+      ];
+
+  static ThemeData light() {
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: brandBlue,
+        primary: brandBlue,
+        secondary: brandYellow,
+        surface: surfaceColor,
       ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: panel,
+      scaffoldBackgroundColor: appBackground,
+      useMaterial3: true,
+      textTheme: ThemeData.light().textTheme.apply(
+            bodyColor: textPrimary,
+            displayColor: textPrimary,
+          ),
+      cardTheme: CardThemeData(
+        color: surfaceColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: glassBorder),
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: borderColor),
         ),
+        elevation: 0,
+        shadowColor: shadowColor,
+        margin: EdgeInsets.zero,
       ),
-      tooltipTheme: TooltipThemeData(
-        decoration: BoxDecoration(
-          color: brandBlueDeep,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: outline.withValues(alpha: 0.6)),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
         ),
-        textStyle: const TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: borderColor),
         ),
-        waitDuration: const Duration(milliseconds: 400),
-      ),
-      scrollbarTheme: ScrollbarThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.dragged)) {
-            return brandGold.withValues(alpha: 0.6);
-          }
-          if (states.contains(WidgetState.hovered)) {
-            return muted.withValues(alpha: 0.5);
-          }
-          return muted.withValues(alpha: 0.25);
-        }),
-        radius: const Radius.circular(8),
-        thickness: WidgetStateProperty.all(6),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: brandBlueStrong, width: 1.6),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: brandGold,
-          foregroundColor: brandBlueDeep,
-          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: fg,
-          side: BorderSide(color: muted.withValues(alpha: 0.35)),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
+          side: const BorderSide(color: borderColor),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: panelRaised.withValues(alpha: 0.42),
-        labelStyle: const TextStyle(color: muted),
-        hintStyle: TextStyle(color: muted.withValues(alpha: 0.78)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: outline.withValues(alpha: 0.55)),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: brandBlueDeep,
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: outline.withValues(alpha: 0.55)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
         ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: brandGold, width: 1.4),
-        ),
-      ),
-      textTheme: base.textTheme.apply(
-        fontFamily: fontFamily,
-        fontFamilyFallback: _fontFallback,
-      ),
-      primaryTextTheme: base.primaryTextTheme.apply(
-        fontFamily: fontFamily,
-        fontFamilyFallback: _fontFallback,
       ),
     );
   }

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import 'src/admin_auth.dart';
 import 'src/api_client.dart';
 import 'src/config.dart';
@@ -7,9 +9,59 @@ import 'src/pages/transporter_area_page.dart';
 import 'src/pages/transporter_checkin_page.dart';
 import 'src/pages/transporter_checkout_page.dart';
 import 'src/pages/transporter_dashboard_page.dart';
+import 'src/pages/transporter_drivers_page.dart';
 import 'src/pages/transporter_loads_page.dart';
 import 'src/pages/transporter_support_page.dart';
+import 'src/theme.dart';
 import 'src/widgets/admin_login_dialog.dart';
+import 'src/widgets/common_widgets.dart';
+import 'src/widgets/header.dart';
+import 'src/widgets/sidebar.dart';
+
+const List<NavPageItem> transportNavItems = [
+  NavPageItem(
+    index: 0,
+    title: 'Dashboard',
+    subtitle: 'Ringkasan operasional armada & aktivitas transporter di pabrik.',
+    icon: Icons.grid_view_rounded,
+  ),
+  NavPageItem(
+    index: 1,
+    title: 'Transporter di Area',
+    subtitle: 'Daftar armada dan sopir yang sedang aktif berada di dalam area pabrik.',
+    icon: Icons.local_shipping_rounded,
+  ),
+  NavPageItem(
+    index: 2,
+    title: 'Konfirmasi Masuk',
+    subtitle: 'Pencatatan kedatangan transporter, alur bongkar/muat, dan TTD gerbang.',
+    icon: Icons.login_rounded,
+  ),
+  NavPageItem(
+    index: 3,
+    title: 'Konfirmasi Keluar',
+    subtitle: 'Pemeriksaan muatan, verifikasi segel/dokumen, dan penyelesaian sesi armada.',
+    icon: Icons.logout_rounded,
+  ),
+  NavPageItem(
+    index: 4,
+    title: 'Akun Sopir',
+    subtitle: 'Manajemen status aktif/non-aktif akun sopir, verifikasi SIM, & ekspedisi.',
+    icon: Icons.manage_accounts_rounded,
+  ),
+  NavPageItem(
+    index: 5,
+    title: 'Bongkar Muat & Audit',
+    subtitle: 'Riwayat audit log dan riwayat pergerakan muatan armada transporter.',
+    icon: Icons.table_view_rounded,
+  ),
+  NavPageItem(
+    index: 6,
+    title: 'Bantuan & Laporan',
+    subtitle: 'Pelaporan kendala gerbang dan pusat informasi teknis transporter.',
+    icon: Icons.support_agent_rounded,
+  ),
+];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,17 +76,9 @@ class GsVisitTransportApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GS VISIT TRANSPORT',
+      title: 'Garudashield Transporter',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF09111E),
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.amber,
-          secondary: Colors.amberAccent,
-          surface: Color(0xFF0F1A2E),
-        ),
-      ),
+      theme: AppTheme.light(),
       home: TransportHomePage(config: config),
     );
   }
@@ -54,10 +98,25 @@ class _TransportHomePageState extends State<TransportHomePage> {
   int _currentPage = 0;
   ActiveGuestRow? _selectedCheckoutRow;
   bool _initializing = true;
+  bool _sidebarCollapsed = false;
+
+  late DateTime _now;
+  Timer? _clockTimer;
+  String _statusText =
+      'Aplikasi siap digunakan. Pilih menu di sidebar untuk memantau atau mengonfirmasi armada transporter.';
 
   @override
   void initState() {
     super.initState();
+    _now = DateTime.now();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _now = DateTime.now();
+        });
+      }
+    });
+
     _client = TransportApiClient(
       baseUrl: widget.config.baseUrl,
       adminToken: widget.config.adminToken,
@@ -65,8 +124,15 @@ class _TransportHomePageState extends State<TransportHomePage> {
     _checkStoredSession();
   }
 
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkStoredSession() async {
-    if (widget.config.adminToken.isNotEmpty && widget.config.adminEmail.isNotEmpty) {
+    if (widget.config.adminToken.isNotEmpty &&
+        widget.config.adminEmail.isNotEmpty) {
       try {
         final me = await _client.fetchMe();
         if (me['success'] == true) {
@@ -75,7 +141,9 @@ class _TransportHomePageState extends State<TransportHomePage> {
             email: admin?['email']?.toString() ?? widget.config.adminEmail,
             fullName: admin?['full_name']?.toString() ?? '',
             role: admin?['role']?.toString() ?? 'admin_transport',
-            branchId: me['branch_id'] is int ? me['branch_id'] as int : widget.config.branchId,
+            branchId: me['branch_id'] is int
+                ? me['branch_id'] as int
+                : widget.config.branchId,
             token: widget.config.adminToken,
           );
         }
@@ -90,7 +158,8 @@ class _TransportHomePageState extends State<TransportHomePage> {
     final unlocked = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AdminLoginDialog(config: widget.config, session: _session),
+      builder: (_) =>
+          AdminLoginDialog(config: widget.config, session: _session),
     );
 
     if (unlocked == true && mounted) {
@@ -99,6 +168,7 @@ class _TransportHomePageState extends State<TransportHomePage> {
           baseUrl: widget.config.baseUrl,
           adminToken: _session.token,
         );
+        _statusText = 'Operator terhubung sebagai ${_session.email}.';
       });
     }
   }
@@ -106,15 +176,75 @@ class _TransportHomePageState extends State<TransportHomePage> {
   void _logout() async {
     _session.lock();
     await widget.config.clearAuth();
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        _statusText = 'Sesi terkunci. Silakan masuk untuk melanjutkan.';
+      });
+    }
+  }
+
+  void _onSelectPage(int index) {
+    setState(() {
+      _currentPage = index;
+      if (index != 3) _selectedCheckoutRow = null;
+      _statusText = 'Membuka menu ${transportNavItems[index].title}.';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_initializing) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: Colors.amber),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1F0F3D91),
+                      blurRadius: 24,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Image.asset(
+                  'assets/branding/logo.png',
+                  height: 48,
+                  width: 48,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.local_shipping_rounded,
+                    size: 40,
+                    color: brandBlue,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const SizedBox(
+                width: 38,
+                height: 38,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: brandBlue,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Menyiapkan Garudashield Transporter…',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -123,46 +253,131 @@ class _TransportHomePageState extends State<TransportHomePage> {
       return _buildLockScreen();
     }
 
+    final currentMeta = transportNavItems[_currentPage];
+
     return Scaffold(
-      body: Row(
-        children: [
-          _buildSidebar(),
-          Expanded(
-            child: Column(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF5F8FF), Color(0xFFEFF4FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Row(
               children: [
-                _buildTopBar(),
-                Expanded(child: _buildPage()),
+                Sidebar(
+                  selectedIndex: _currentPage,
+                  onSelect: _onSelectPage,
+                  items: transportNavItems,
+                  isCollapsed: _sidebarCollapsed,
+                ),
+                Expanded(
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Header(
+                            title: currentMeta.title,
+                            subtitle: currentMeta.subtitle,
+                            now: _now,
+                            branchName: widget.config.branchName.isNotEmpty
+                                ? widget.config.branchName
+                                : (widget.config.branchId != null
+                                    ? 'Cabang #${widget.config.branchId}'
+                                    : 'Sumedang Plant'),
+                            operatorEmail: _session.email,
+                            onLogout: _logout,
+                          ),
+                          const SizedBox(height: 20),
+                          Expanded(
+                            child: _buildPage(),
+                          ),
+                          const SizedBox(height: 14),
+                          StatusBar(text: _statusText),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+            // Floating collapse toggle button persis seperti FaceID Windows shell
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              left: _sidebarCollapsed ? 96.0 - 20 : 280.0 - 20,
+              top: 36,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(2, 0),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _sidebarCollapsed = !_sidebarCollapsed;
+                    });
+                  },
+                  icon: Icon(
+                    _sidebarCollapsed
+                        ? Icons.chevron_right_rounded
+                        : Icons.chevron_left_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    shape: const CircleBorder(),
+                    side: const BorderSide(
+                      color: Colors.white24,
+                      width: 1.5,
+                    ),
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(40, 40),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLockScreen() {
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF070F1E), Color(0xFF0F1A2E)],
+            colors: [Color(0xFFF5F8FF), Color(0xFFEFF4FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: Center(
           child: Container(
-            width: 440,
-            padding: const EdgeInsets.all(36),
+            width: 480,
+            padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F1A2E),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              boxShadow: [
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: borderColor),
+              boxShadow: const [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
+                  color: Color(0x1F0F3D91),
+                  blurRadius: 36,
+                  offset: Offset(0, 14),
                 ),
               ],
             ),
@@ -170,46 +385,88 @@ class _TransportHomePageState extends State<TransportHomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                  ),
-                  child: const Icon(Icons.local_shipping, color: Colors.amber, size: 36),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'GS VISIT TRANSPORT',
-                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: brandYellow.withValues(alpha: 0.72),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: brandYellow.withValues(alpha: 0.25),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                      const BoxShadow(
+                        color: Color(0x14000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/branding/logo.png',
+                    height: 58,
+                    width: 58,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.local_shipping_rounded,
+                      size: 48,
+                      color: brandBlue,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 22),
                 const Text(
-                  'Aplikasi Manajemen & Logistik Transporter (Windows)',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white60, fontSize: 13),
+                  'GARUDASHIELD',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 4),
+                const Text(
+                  'TRANSPORTER GATE DESK',
+                  style: TextStyle(
+                    color: brandBlue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Sistem Manajemen Gerbang Logistik & Transporter\nPT. GARUDAFOOD PUTRA PUTRI JAYA Tbk.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textMuted,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: _openLogin,
-                    icon: const Icon(Icons.lock_open, size: 18),
+                    icon: const Icon(Icons.login_rounded, size: 20),
                     label: const Text(
                       'Masuk dengan Akun Google Petugas',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.black87,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                   ),
                 ),
@@ -217,137 +474,6 @@ class _TransportHomePageState extends State<TransportHomePage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F1A2E),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Text(
-                widget.config.branchName.isNotEmpty
-                    ? 'Cabang: ${widget.config.branchName}'
-                    : 'Cabang Garudafood (ID: ${widget.config.branchId ?? "Global"})',
-                style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.amber.withValues(alpha: 0.2),
-                child: const Icon(Icons.person, size: 16, color: Colors.amber),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                _session.email,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                onPressed: _logout,
-                icon: const Icon(Icons.power_settings_new, color: Colors.redAccent, size: 20),
-                tooltip: 'Keluar / Kunci Konsol',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebar() {
-    return Container(
-      width: 250,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1424),
-        border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.local_shipping, color: Colors.amber, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'GS TRANSPORT',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    Text(
-                      'Admin Gerbang Logistik',
-                      style: TextStyle(color: Colors.white38, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(color: Colors.white12, height: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              children: [
-                _navItem(0, Icons.dashboard_outlined, 'Dashboard Utama'),
-                _navItem(1, Icons.airport_shuttle_outlined, 'Transporter di Area'),
-                _navItem(2, Icons.login_outlined, 'Konfirmasi Masuk'),
-                _navItem(3, Icons.logout_outlined, 'Konfirmasi Keluar'),
-                _navItem(4, Icons.history_outlined, 'Bongkar Muat & Audit'),
-                _navItem(5, Icons.support_agent_outlined, 'Bantuan & Laporan'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _navItem(int index, IconData icon, String label) {
-    final active = _currentPage == index;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        selected: active,
-        selectedTileColor: Colors.amber.withValues(alpha: 0.15),
-        leading: Icon(icon, color: active ? Colors.amber : Colors.white60, size: 20),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: active ? Colors.amber : Colors.white70,
-            fontSize: 13,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        onTap: () {
-          setState(() {
-            _currentPage = index;
-            if (index != 3) _selectedCheckoutRow = null;
-          });
-        },
       ),
     );
   }
@@ -359,7 +485,12 @@ class _TransportHomePageState extends State<TransportHomePage> {
           client: _client,
           config: widget.config,
           session: _session,
-          onNavigate: (idx) => setState(() => _currentPage = idx),
+          onNavigate: (idx) {
+            setState(() {
+              _currentPage = idx;
+              if (idx != 3) _selectedCheckoutRow = null;
+            });
+          },
         );
       case 1:
         return TransporterAreaPage(
@@ -389,12 +520,18 @@ class _TransportHomePageState extends State<TransportHomePage> {
           onDone: () => setState(() => _currentPage = 1),
         );
       case 4:
-        return TransporterLoadsPage(
+        return TransporterDriversPage(
           client: _client,
           config: widget.config,
           session: _session,
         );
       case 5:
+        return TransporterLoadsPage(
+          client: _client,
+          config: widget.config,
+          session: _session,
+        );
+      case 6:
         return TransporterSupportPage(
           client: _client,
           config: widget.config,

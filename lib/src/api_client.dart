@@ -60,16 +60,51 @@ class TransportApiClient {
         .get(_uri('/api/branches'), headers: _headers)
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return [];
-    final json = jsonDecode(resp.body) as List<dynamic>;
-    return json.map((e) => Branch.fromJson(e as Map<String, dynamic>)).toList();
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['branches'] is List) {
+      list = decoded['branches'] as List<dynamic>;
+    } else if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      list = decoded['data'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
+    return list.map((e) => Branch.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Ambil daftar sub-area pabrik (GF, DC, MBR)
+  Future<List<PlantArea>> fetchAreas({int? branchId}) async {
+    final query = <String, String>{
+      if (branchId != null) 'branch_id': '$branchId',
+    };
+    final resp = await _client
+        .get(_uri('/api/areas', query), headers: _headers)
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode != 200) return [];
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['areas'] is List) {
+      list = decoded['areas'] as List<dynamic>;
+    } else if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      list = decoded['data'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
+    return list.map((e) => PlantArea.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Ambil daftar transporter yang sedang berada di area
-  Future<List<ActiveGuestRow>> fetchActiveTransporters({int? branchId}) async {
+  Future<List<ActiveGuestRow>> fetchActiveTransporters({int? branchId, int? areaId}) async {
     final query = <String, String>{
       'kind': 'transporter',
       if (branchId != null) 'branch_id': '$branchId',
+      if (areaId != null) 'area_id': '$areaId',
     };
+
     final resp = await _client
         .get(_uri('/api/active-guests/today', query), headers: _headers)
         .timeout(const Duration(seconds: 20));
@@ -77,8 +112,18 @@ class TransportApiClient {
     if (resp.statusCode != 200) {
       throw Exception('Gagal memuat transporter di area: ${resp.body}');
     }
-    final json = jsonDecode(resp.body) as List<dynamic>;
-    return json.map((e) => ActiveGuestRow.fromJson(e as Map<String, dynamic>)).toList();
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['guests'] is List) {
+      list = decoded['guests'] as List<dynamic>;
+    } else if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      list = decoded['data'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
+    return list.map((e) => ActiveGuestRow.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Konfirmasi masuk transporter (Check-in + TTD Satpam & Dokumen Muatan)
@@ -111,7 +156,17 @@ class TransportApiClient {
         .get(_uri('/api/visit-plans/$planId/loads'), headers: _headers)
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return [];
-    final list = jsonDecode(resp.body) as List<dynamic>;
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['loads'] is List) {
+      list = decoded['loads'] as List<dynamic>;
+    } else if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      list = decoded['data'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
     return list.cast<Map<String, dynamic>>();
   }
 
@@ -136,7 +191,17 @@ class TransportApiClient {
         .get(_uri('/api/transporter/audit-logs', query), headers: _headers)
         .timeout(const Duration(seconds: 20));
     if (resp.statusCode != 200) return [];
-    final list = jsonDecode(resp.body) as List<dynamic>;
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['audit_logs'] is List) {
+      list = decoded['audit_logs'] as List<dynamic>;
+    } else if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      list = decoded['data'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
     return list.cast<Map<String, dynamic>>();
   }
 
@@ -154,6 +219,55 @@ class TransportApiClient {
             'title': title,
             'description': description,
             'category': category ?? 'transporter',
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
+  /// Ambil daftar sopir transporter & status keaktifan akun
+  Future<List<TransporterDriver>> fetchTransporterDrivers({
+    String? search,
+    bool? isActive,
+    int limit = 100,
+  }) async {
+    final query = <String, String>{
+      'limit': '$limit',
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      if (isActive != null) 'is_active': '$isActive',
+    };
+    final resp = await _client
+        .get(_uri('/api/transporter/drivers', query), headers: _headers)
+        .timeout(const Duration(seconds: 20));
+    if (resp.statusCode != 200) return [];
+    final decoded = jsonDecode(resp.body);
+    final List<dynamic> list;
+    if (decoded is List) {
+      list = decoded;
+    } else if (decoded is Map<String, dynamic> && decoded['drivers'] is List) {
+      list = decoded['drivers'] as List<dynamic>;
+    } else {
+      list = const [];
+    }
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map((j) => TransporterDriver.fromJson(j))
+        .toList();
+  }
+
+  /// Aktifkan atau nonaktifkan profil sopir transporter
+  Future<Map<String, dynamic>> toggleTransporterDriverActive({
+    required int visitorId,
+    required bool isActive,
+    String? reason,
+  }) async {
+    final resp = await _client
+        .patch(
+          _uri('/api/transporter/drivers/$visitorId/toggle-active'),
+          headers: _headers,
+          body: jsonEncode({
+            'is_active': isActive,
+            if (reason != null && reason.isNotEmpty) 'reason': reason,
           }),
         )
         .timeout(const Duration(seconds: 20));

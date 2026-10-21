@@ -332,6 +332,67 @@ class Branch {
   );
 }
 
+/// Kategori 3 area pabrik Garudafood (Garudafood, DC, MBR).
+enum PlantAreaCategory {
+  all('ALL', 'Semua Area', Icons.domain_rounded, Color(0xFF1E88E5)),
+  garudafood('GF', 'Garudafood', Icons.factory_rounded, Color(0xFF1565C0)),
+  dc('DC', 'DC (Distribution Center)', Icons.warehouse_rounded, Color(0xFF2E7D32)),
+  mbr('MBR', 'MBR', Icons.inventory_2_rounded, Color(0xFFD84315));
+
+  final String code;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const PlantAreaCategory(this.code, this.label, this.icon, this.color);
+
+  static PlantAreaCategory fromCodeOrName(String? code, String? name) {
+    final c = (code ?? '').trim().toUpperCase();
+    final n = (name ?? '').trim().toUpperCase();
+    if (c == 'DC' || n == 'DC' || n.contains('DISTRIB')) {
+      return PlantAreaCategory.dc;
+    }
+    if (c == 'MBR' || n == 'MBR') {
+      return PlantAreaCategory.mbr;
+    }
+    if (c == 'GF' || n.contains('GARUDAFOOD') || n.contains('GF') || n.contains('PABRIK')) {
+      return PlantAreaCategory.garudafood;
+    }
+    return PlantAreaCategory.garudafood;
+  }
+}
+
+/// Sub-area fisik di dalam cabang pabrik (GF, DC, MBR).
+class PlantArea {
+  final int id;
+  final int branchId;
+  final String code;
+  final String name;
+  final bool active;
+  final int sortOrder;
+
+  PlantArea({
+    required this.id,
+    this.branchId = 0,
+    required this.code,
+    required this.name,
+    this.active = true,
+    this.sortOrder = 0,
+  });
+
+  factory PlantArea.fromJson(Map<String, dynamic> j) => PlantArea(
+    id: (j['id'] as num?)?.toInt() ?? 0,
+    branchId: (j['branch_id'] as num?)?.toInt() ?? 0,
+    code: j['code'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    active: j['active'] == true,
+    sortOrder: (j['sort_order'] as num?)?.toInt() ?? 0,
+  );
+
+  PlantAreaCategory get category => PlantAreaCategory.fromCodeOrName(code, name);
+}
+
+
 /// A local webcam (laptop or USB) the sidecar found via `/cameras`, for the
 /// Settings dropdown -- so the operator picks by name instead of guessing a
 /// `/dev/videoN` index.
@@ -762,10 +823,13 @@ class ActiveGuestRow {
   final int? areaId;
   final String areaName;
   final String areaCode;
+  final bool isActive;
 
   bool get isTransporter => visitorType == 'transporter';
   bool get dibatalkan =>
       status == 'expired' || status == 'cancelled' || status == 'batal';
+  PlantAreaCategory get areaCategory =>
+      PlantAreaCategory.fromCodeOrName(areaCode, areaName);
 
   ActiveGuestRow({
     required this.planId,
@@ -795,6 +859,7 @@ class ActiveGuestRow {
     this.areaId,
     this.areaName = '',
     this.areaCode = '',
+    this.isActive = true,
   });
 
   /// Still physically on site: checked in, not yet checked out, and not cancelled.
@@ -839,6 +904,7 @@ class ActiveGuestRow {
           (j['area'] is Map ? (j['area'] as Map)['name']?.toString() ?? '' : ''),
       areaCode: j['area_code'] as String? ??
           (j['area'] is Map ? (j['area'] as Map)['code']?.toString() ?? '' : ''),
+      isActive: j['is_active'] != false,
     );
   }
 }
@@ -1294,3 +1360,86 @@ class VendorCompany {
     if (branchId != null) 'branch_id': branchId,
   };
 }
+
+/// Profil akun sopir armada transporter yang terdaftar di sistem.
+class TransporterDriver {
+  final int id;
+  final String visitorCode;
+  final String fullName;
+  final String company;
+  final String phone;
+  final String simNumber;
+  final DateTime? simExpiresAt;
+  final bool isActive;
+  final DateTime? createdAt;
+  final String? photoUrl;
+  final int totalTrips;
+  final DateTime? lastVisit;
+
+  TransporterDriver({
+    required this.id,
+    required this.visitorCode,
+    required this.fullName,
+    required this.company,
+    required this.phone,
+    required this.simNumber,
+    this.simExpiresAt,
+    this.isActive = true,
+    this.createdAt,
+    this.photoUrl,
+    this.totalTrips = 0,
+    this.lastVisit,
+  });
+
+  bool matches(String q) {
+    final query = q.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    return fullName.toLowerCase().contains(query) ||
+        company.toLowerCase().contains(query) ||
+        visitorCode.toLowerCase().contains(query) ||
+        simNumber.toLowerCase().contains(query) ||
+        phone.toLowerCase().contains(query);
+  }
+
+  bool get isSimExpired {
+    if (simExpiresAt == null) return false;
+    final now = DateTime.now();
+    return simExpiresAt!.isBefore(DateTime(now.year, now.month, now.day));
+  }
+
+  bool get isSimExpiringSoon {
+    if (simExpiresAt == null) return false;
+    final now = DateTime.now();
+    final diff =
+        simExpiresAt!.difference(DateTime(now.year, now.month, now.day)).inDays;
+    return diff >= 0 && diff <= 30;
+  }
+
+  factory TransporterDriver.fromJson(Map<String, dynamic> j) {
+    final rawSimExp = j['sim_expires_at']?.toString();
+    final rawCreated = j['created_at']?.toString();
+    final rawLastVisit = j['last_visit']?.toString();
+
+    return TransporterDriver(
+      id: (j['id'] as num?)?.toInt() ?? 0,
+      visitorCode: j['visitor_code'] as String? ?? '',
+      fullName: j['full_name'] as String? ?? '',
+      company: j['company'] as String? ?? '',
+      phone: j['phone'] as String? ?? '',
+      simNumber: j['sim_number'] as String? ?? '',
+      simExpiresAt: rawSimExp != null && rawSimExp.isNotEmpty
+          ? DateTime.tryParse(rawSimExp)
+          : null,
+      isActive: j['is_active'] != false,
+      createdAt: rawCreated != null && rawCreated.isNotEmpty
+          ? DateTime.tryParse(rawCreated)
+          : null,
+      photoUrl: j['photo_url'] as String?,
+      totalTrips: (j['total_trips'] as num?)?.toInt() ?? 0,
+      lastVisit: rawLastVisit != null && rawLastVisit.isNotEmpty
+          ? DateTime.tryParse(rawLastVisit)
+          : null,
+    );
+  }
+}
+

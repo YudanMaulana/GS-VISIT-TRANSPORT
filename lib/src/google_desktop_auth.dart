@@ -83,6 +83,11 @@ class GoogleDesktopAuth {
   /// browser with a friendly page, and return the code.
   Future<String> _awaitRedirect(HttpServer server, String expectedState) async {
     await for (final req in server) {
+      if (req.uri.path == '/favicon.ico') {
+        req.response.statusCode = 404;
+        await req.response.close();
+        continue;
+      }
       final params = req.uri.queryParameters;
       final error = params['error'];
       final code = params['code'];
@@ -155,7 +160,9 @@ class GoogleDesktopAuth {
   static Future<void> _openBrowser(String url) async {
     try {
       if (Platform.isWindows) {
-        await Process.start('cmd', ['/c', 'start', '', url]);
+        // cmd.exe memperlakukan '&' sebagai pemisah perintah jika tidak di-escape
+        final escaped = url.replaceAll('^', '^^').replaceAll('&', '^&');
+        await Process.start('cmd', ['/c', 'start', '', escaped]);
       } else if (Platform.isMacOS) {
         await Process.start('open', [url]);
       } else {

@@ -882,7 +882,11 @@ class ActiveGuestRow {
       purpose: j['purpose'] as String? ?? '',
       phone: j['phone'] as String? ?? '',
       status: st,
-      photoUrl: j['photo_url'] as String? ?? '',
+      photoUrl: (j['photo_url'] as String?)?.isNotEmpty == true
+          ? j['photo_url'] as String
+          : ((j['photo_path'] as String?)?.isNotEmpty == true
+              ? '/photos/'
+              : ''),
       checkinAt: _serverDate(j['checkin_at']),
       checkoutAt: _serverDate(j['checkout_at']),
       formComplete: j['form_complete'] == true,
@@ -982,7 +986,11 @@ class PlanRow {
       status: j['status'] as String? ?? '',
       visitorName: v['full_name'] as String? ?? '(tanpa nama)',
       company: v['company'] as String? ?? '',
-      photoUrl: v['photo_url'] as String? ?? '',
+      photoUrl: (v['photo_url'] as String?)?.isNotEmpty == true
+          ? v['photo_url'] as String
+          : ((v['photo_path'] as String?)?.isNotEmpty == true
+              ? '/photos/'
+              : ''),
       branchName: b['name'] as String? ?? '',
       picTarget: j['pic_target'] as String? ?? '',
       purpose: j['purpose'] as String? ?? '',
@@ -1420,6 +1428,12 @@ class TransporterDriver {
     final rawCreated = j['created_at']?.toString();
     final rawLastVisit = j['last_visit']?.toString();
 
+    final rawPhoto = (j['photo_url'] as String?)?.isNotEmpty == true
+        ? j['photo_url'] as String
+        : ((j['photo_path'] as String?)?.isNotEmpty == true
+            ? '/photos/'
+            : null);
+
     return TransporterDriver(
       id: (j['id'] as num?)?.toInt() ?? 0,
       visitorCode: j['visitor_code'] as String? ?? '',
@@ -1434,7 +1448,7 @@ class TransporterDriver {
       createdAt: rawCreated != null && rawCreated.isNotEmpty
           ? DateTime.tryParse(rawCreated)
           : null,
-      photoUrl: j['photo_url'] as String?,
+      photoUrl: rawPhoto,
       totalTrips: (j['total_trips'] as num?)?.toInt() ?? 0,
       lastVisit: rawLastVisit != null && rawLastVisit.isNotEmpty
           ? DateTime.tryParse(rawLastVisit)

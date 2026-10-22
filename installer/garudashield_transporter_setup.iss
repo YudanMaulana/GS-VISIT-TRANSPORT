@@ -73,6 +73,11 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Description: "{cm:LaunchProgram}"; Filename: "{app}\{#MyAppExeName}"; Flags: nowait postinstall skipifsilent
 
+[Registry]
+; Paksa preferensi GPU Windows (DWM / DXGI) ke High Performance (Dedicated GPU / NVIDIA RTX)
+; Mencegah blank white screen pada sistem dual GPU (AMD iGPU + NVIDIA RTX) atau virtual display remote
+Root: HKCU; Subkey: "Software\Microsoft\DirectX\UserGpuPreferences"; ValueType: string; ValueName: "{app}\{#MyAppExeName}"; ValueData: "GpuPreference=2;"; Flags: uninsdeletevalue
+
 [Code]
 var
   IsUpdateMode: Boolean;
@@ -267,3 +272,4 @@ begin
     end;
   end;
 end;
+

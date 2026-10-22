@@ -98,6 +98,284 @@ class _TransporterCheckoutPageState extends State<TransporterCheckoutPage> {
     return '$h:$m';
   }
 
+  Future<void> _openManageLoadsModal(ActiveGuestRow target) async {
+    final goodsCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController();
+    final doCtrl = TextEditingController(text: target.firstShipmentNo);
+    final containerCtrl = TextEditingController();
+    final sealCtrl = TextEditingController();
+    bool loadingLoads = true;
+    bool savingLoad = false;
+    List<Map<String, dynamic>> loads = [];
+    String? modalError;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          void fetchCurrentLoads() async {
+            try {
+              final res = await widget.client.fetchLoads(target.planId);
+              if (ctx.mounted) {
+                setModalState(() {
+                  loads = res;
+                  loadingLoads = false;
+                });
+              }
+            } catch (e) {
+              if (ctx.mounted) {
+                setModalState(() {
+                  modalError = 'Gagal mengambil muatan: $e';
+                  loadingLoads = false;
+                });
+              }
+            }
+          }
+
+          if (loadingLoads) {
+            fetchCurrentLoads();
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: brandBlueSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.inventory_2_outlined, color: brandBlue, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Kelola Rincian Muatan - ${target.vehiclePlate}',
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+                      ),
+                      Text(
+                        'Antrean #${target.queueNumber ?? target.planId} • ${target.name}',
+                        style: const TextStyle(fontSize: 12, color: textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 680,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (modalError != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF0F0),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(modalError!, style: const TextStyle(color: Color(0xFFD64045), fontSize: 12)),
+                      ),
+
+                    // Daftar muatan saat ini
+                    const Text(
+                      'Daftar Barang Tercatat:',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    if (loadingLoads)
+                      const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2)))
+                    else if (loads.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: panelColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: const Text(
+                          'Belum ada rincian barang muatan untuk rencana ini. Silakan input di bawah.',
+                          style: TextStyle(fontSize: 12, color: textMuted),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Column(
+                          children: [
+                            for (int i = 0; i < loads.length; i++)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  border: i > 0 ? const Border(top: BorderSide(color: borderColor)) : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text('${i + 1}.', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            loads[i]['goods_name']?.toString() ?? '-',
+                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                          ),
+                                          Text(
+                                            'Jumlah: ${loads[i]["quantity"] ?? "-"} • SJ/DO: ${loads[i]["shipment_no"] ?? "-"}',
+                                            style: const TextStyle(fontSize: 11, color: textMuted),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (loads[i]['container_no'] != null && loads[i]['container_no'].toString().isNotEmpty)
+                                      StatusPill(text: 'Kontainer: ${loads[i]["container_no"]}', color: brandBlue),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 12),
+
+                    // Form Tambah Baris Muatan Baru
+                    const Text(
+                      'Tambah Baris Muatan Baru:',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: textPrimary),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: InputField(
+                            label: 'Nama Barang *',
+                            controller: goodsCtrl,
+                            hintText: 'Contoh: Kacang Garuda Roster 100g',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: InputField(
+                            label: 'Jumlah / Satuan *',
+                            controller: qtyCtrl,
+                            hintText: 'Contoh: 120 Karton / 3.5 Ton',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InputField(
+                            label: 'Nomor Surat Jalan / DO',
+                            controller: doCtrl,
+                            hintText: 'Contoh: SJ-2026/06/1029',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: InputField(
+                            label: 'Nomor Segel (Seal No)',
+                            controller: sealCtrl,
+                            hintText: 'Contoh: SEAL-88912',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: savingLoad
+                            ? null
+                            : () async {
+                                final gName = goodsCtrl.text.trim();
+                                if (gName.isEmpty) {
+                                  setModalState(() => modalError = 'Nama barang wajib diisi.');
+                                  return;
+                                }
+                                setModalState(() {
+                                  savingLoad = true;
+                                  modalError = null;
+                                });
+                                try {
+                                  final res = await widget.client.addLoad(target.planId, {
+                                    'goods_name': gName,
+                                    'quantity': qtyCtrl.text.trim(),
+                                    'shipment_no': doCtrl.text.trim(),
+                                    'seal_no': sealCtrl.text.trim(),
+                                    'container_no': containerCtrl.text.trim(),
+                                  });
+                                  if (res['success'] == false) {
+                                    throw Exception(res['message'] ?? 'Gagal menambah muatan.');
+                                  }
+                                  goodsCtrl.clear();
+                                  qtyCtrl.clear();
+                                  sealCtrl.clear();
+                                  setModalState(() {
+                                    savingLoad = false;
+                                    loadingLoads = true;
+                                  });
+                                  fetchCurrentLoads();
+                                  _loadActive();
+                                } catch (err) {
+                                  setModalState(() {
+                                    modalError = err.toString().replaceFirst('Exception: ', '');
+                                    savingLoad = false;
+                                  });
+                                }
+                              },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: brandBlue,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        ),
+                        icon: savingLoad
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Simpan Baris Muatan'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Tutup'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    _loadActive();
+  }
+
   Future<void> _submitCheckout() async {
     if (_selected == null) {
       setState(() => _error = 'Pilih armada transporter yang akan check-out.');
@@ -111,9 +389,42 @@ class _TransporterCheckoutPageState extends State<TransporterCheckoutPage> {
     }
 
     if (_selected!.loadCount == 0) {
-      setState(() => _error =
-          'Data barang muatan armada ini belum tercatat. Lengkapi catatan muatan sebelum konfirmasi keluar.');
-      return;
+      final proceedWithoutLoads = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
+              SizedBox(width: 10),
+              Text('Muatan Belum Tercatat', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            ],
+          ),
+          content: Text(
+            'Armada ${_selected!.vehiclePlate} belum memiliki rincian barang muatan terpisah di sistem.\n\n'
+            'Apakah Anda ingin mencatat rincian barang sekarang, atau melanjutkan check-out dengan armada kosong / dokumen fisik terlampir?',
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(false);
+                _openManageLoadsModal(_selected!);
+              },
+              child: const Text('Input Muatan Dulu'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: brandBlue),
+              child: const Text('Lanjutkan Keluar'),
+            ),
+          ],
+        ),
+      );
+
+      if (proceedWithoutLoads != true) {
+        return;
+      }
     }
 
     final pngBytes = await _padKey.currentState?.toPng();
@@ -372,6 +683,24 @@ class _TransporterCheckoutPageState extends State<TransporterCheckoutPage> {
                                 children: [
                                   Row(
                                     children: [
+                                      if (widget.client.resolvePhotoUrl(_selected!.photoUrl).isNotEmpty) ...[
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          margin: const EdgeInsets.only(right: 12),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: brandBlue, width: 2),
+                                          ),
+                                          child: ClipOval(
+                                            child: Image.network(
+                                              widget.client.resolvePhotoUrl(_selected!.photoUrl),
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => const Icon(Icons.person_rounded, color: brandBlue),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                       Expanded(
                                         child: DetailLine(
                                           label: 'NAMA PENGEMUDI',
@@ -420,6 +749,60 @@ class _TransporterCheckoutPageState extends State<TransporterCheckoutPage> {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: _selected!.loadCount > 0
+                                          ? successColor.withValues(alpha: 0.08)
+                                          : brandYellow.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _selected!.loadCount > 0
+                                            ? successColor.withValues(alpha: 0.3)
+                                            : brandYellow.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              _selected!.loadCount > 0
+                                                  ? Icons.inventory_2_rounded
+                                                  : Icons.warning_amber_rounded,
+                                              size: 18,
+                                              color: _selected!.loadCount > 0 ? successColor : warningColor,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _selected!.loadCount > 0
+                                                  ? '${_selected!.loadCount} Baris Muatan Tercatat'
+                                                  : 'Belum Ada Rincian Muatan Terpisah',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: _selected!.loadCount > 0 ? successColor : warningColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () => _openManageLoadsModal(_selected!),
+                                          icon: const Icon(Icons.edit_note_rounded, size: 16),
+                                          label: Text(
+                                            _selected!.loadCount > 0 ? 'Lihat / Tambah' : '+ Input Muatan',
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),

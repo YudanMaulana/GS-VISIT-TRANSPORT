@@ -160,6 +160,34 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                 const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final log = _auditLogs[index];
+                              final plate = log['vehicle_plate']?.toString() ??
+                                  log['plate_number']?.toString() ??
+                                  '-';
+                              final loadType = log['load_type']?.toString().toLowerCase() ?? '';
+                              final vehicleType = log['vehicle_type']?.toString() ?? '';
+                              final status = log['status']?.toString() ?? 'planned';
+                              final rawDate = log['created_at']?.toString() ?? log['timestamp']?.toString() ?? '';
+                              String dateFormatted = rawDate;
+                              if (rawDate.isNotEmpty) {
+                                final parsed = DateTime.tryParse(rawDate);
+                                if (parsed != null) {
+                                  dateFormatted =
+                                      '/ :';
+                                }
+                              }
+
+                              final isBongkar = loadType == 'bongkar';
+                              final isMuat = loadType == 'muat';
+                              final actionTitle = isBongkar
+                                  ? 'Bongkar Muatan (Inbound)'
+                                  : (isMuat ? 'Muat Barang (Outbound)' : (log['action']?.toString() ?? 'Aktivitas Transporter'));
+
+                              final themeColor = isBongkar
+                                  ? const Color(0xFF1E88E5)
+                                  : (isMuat ? const Color(0xFFF57C00) : brandBlue);
+
+                              final qNum = log['queue_number'] ?? log['plan_id'];
+
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 18,
@@ -176,12 +204,14 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: brandBlueSoft,
+                                        color: themeColor.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(14),
                                       ),
-                                      child: const Icon(
-                                        Icons.history_rounded,
-                                        color: brandBlue,
+                                      child: Icon(
+                                        isBongkar
+                                            ? Icons.download_rounded
+                                            : (isMuat ? Icons.upload_rounded : Icons.local_shipping_rounded),
+                                        color: themeColor,
                                         size: 22,
                                       ),
                                     ),
@@ -195,8 +225,7 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                             children: [
                                               Flexible(
                                                 child: Text(
-                                                  log['action']?.toString() ??
-                                                      'Aktivitas Transporter',
+                                                  actionTitle,
                                                   style: const TextStyle(
                                                     color: textPrimary,
                                                     fontSize: 14,
@@ -206,20 +235,25 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                                       TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              if (log['queue_number'] != null ||
-                                                  log['plan_id'] != null) ...[
+                                              if (qNum != null) ...[
                                                 const SizedBox(width: 8),
                                                 StatusPill(
-                                                  text:
-                                                      'Antrean #${log['queue_number'] ?? log['plan_id']}',
-                                                  color: brandBlue,
+                                                  text: 'Antrean #$qNum',
+                                                  color: themeColor,
                                                 ),
                                               ],
+                                              const SizedBox(width: 6),
+                                              StatusPill(
+                                                text: status.toUpperCase(),
+                                                color: status == 'checked_in'
+                                                    ? successColor
+                                                    : (status == 'checked_out' ? const Color(0xFF6B7280) : brandYellow),
+                                              ),
                                             ],
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            'Petugas: ${log["officer"] ?? "-"} • Nopol: ${log["plate_number"] ?? "-"} • ${log["timestamp"] ?? ""}',
+                                            'Nopol: $plate • Jenis: ${vehicleType.isNotEmpty ? vehicleType : "Truk"} • Waktu: $dateFormatted',
                                             style: const TextStyle(
                                               color: textMuted,
                                               fontSize: 12,
@@ -229,23 +263,11 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                                         ],
                                       ),
                                     ),
-                                    if (log['details'] != null &&
-                                        log['details'].toString().isNotEmpty) ...[
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        log['details'].toString(),
-                                        style: const TextStyle(
-                                          color: textMuted,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
                                   ],
                                 ),
                               );
                             },
-                          ),
+                          )
           ),
         ),
       ],

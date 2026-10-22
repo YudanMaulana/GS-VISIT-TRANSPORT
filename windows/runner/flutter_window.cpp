@@ -65,6 +65,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
+    case WM_ERASEBKGND:
+      // Return non-zero to indicate that the window background should not be erased
+      // by the default GDI brush, preventing blank white flashes and flicker during ANGLE/D3D11 frames.
+      return 1;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

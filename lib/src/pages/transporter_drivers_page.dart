@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../admin_auth.dart';
 import '../api_client.dart';
 import '../config.dart';
@@ -685,209 +686,89 @@ class _TransporterDriversPageState extends State<TransporterDriversPage> {
           width: driver.isActive ? 1 : 1.5,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Avatar with Status Badge
-            Stack(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: driver.isActive ? brandBlueSoft : surfaceMuted,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: driver.isActive ? brandBlue.withValues(alpha: 0.3) : borderColor,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      driver.fullName.isNotEmpty
-                          ? driver.fullName.substring(0, 1).toUpperCase()
-                          : 'S',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: driver.isActive ? brandBlue : textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-
-            // Driver Identity & Info
-            Expanded(
-              flex: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          driver.fullName,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Visitor Code Tag
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: surfaceMuted,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Text(
-                          driver.visitorCode.isNotEmpty ? driver.visitorCode : '#${driver.id}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.business_rounded, size: 14, color: textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        driver.company.isNotEmpty ? driver.company : 'Perusahaan Logistik',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (driver.phone.isNotEmpty) ...[
-                        const SizedBox(width: 12),
-                        const Icon(Icons.phone_rounded, size: 13, color: textMuted),
-                        const SizedBox(width: 4),
-                        Text(
-                          driver.phone,
-                          style: const TextStyle(fontSize: 12, color: textMuted),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showDriverProfile(driver),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar Foto Profil Sopir Transporter
+              _buildDriverAvatar(
+                driver,
+                size: 52,
+                showStatusBadge: true,
+                onPhotoTap: () {
+                  final photoUrl = widget.client.resolvePhotoUrl(driver.photoUrl);
+                  if (photoUrl.isNotEmpty) {
+                    _showPhotoPreviewDialog(photoUrl, driver.fullName);
+                  } else {
+                    _showDriverProfile(driver);
+                  }
+                },
               ),
-            ),
+              const SizedBox(width: 16),
 
-            // SIM Card Details
-            Expanded(
-              flex: 3,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSimExp
-                      ? statusRed.withValues(alpha: 0.08)
-                      : (isSimSoon ? brandYellowSoft : surfaceMuted),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSimExp
-                        ? statusRed.withValues(alpha: 0.3)
-                        : (isSimSoon ? brandYellowDark.withValues(alpha: 0.3) : borderColor),
-                  ),
-                ),
+              // Driver Identity & Info
+              Expanded(
+                flex: 4,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.badge_rounded,
-                          size: 14,
-                          color: isSimExp
-                              ? statusRed
-                              : (isSimSoon ? brandYellowDark : brandBlue),
+                        Flexible(
+                          child: Text(
+                            driver.fullName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          driver.simNumber.isNotEmpty ? driver.simNumber : 'SIM Tidak Tercatat',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isSimExp ? statusRed : textPrimary,
+                        const SizedBox(width: 8),
+                        // Visitor Code Tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: surfaceMuted,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Text(
+                            driver.visitorCode.isNotEmpty ? driver.visitorCode : '#${driver.id}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: textSecondary,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
+                        const Icon(Icons.business_rounded, size: 14, color: textMuted),
+                        const SizedBox(width: 4),
                         Text(
-                          driver.simExpiresAt != null
-                              ? 'Exp: ${_formatDate(driver.simExpiresAt)}'
-                              : 'Exp: Tidak Ditentukan',
-                          style: TextStyle(
-                            fontSize: 11,
+                          driver.company.isNotEmpty ? driver.company : 'Perusahaan Logistik',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: textSecondary,
                             fontWeight: FontWeight.w600,
-                            color: isSimExp
-                                ? statusRed
-                                : (isSimSoon ? brandYellowDark : textMuted),
                           ),
                         ),
-                        if (isSimExp) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: statusRed,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'EXPIRED',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ] else if (isSimSoon) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: brandYellowDark,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'SEGERA HABIS',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
+                        if (driver.phone.isNotEmpty) ...[
+                          const SizedBox(width: 12),
+                          const Icon(Icons.phone_rounded, size: 13, color: textMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            driver.phone,
+                            style: const TextStyle(fontSize: 12, color: textMuted),
                           ),
                         ],
                       ],
@@ -895,110 +776,922 @@ class _TransporterDriversPageState extends State<TransporterDriversPage> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
 
-            // Trips / Activity Info
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.local_shipping_outlined, size: 14, color: textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${driver.totalTrips} Kali Masuk',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    driver.lastVisit != null
-                        ? 'Terakhir: ${_formatDate(driver.lastVisit)}'
-                        : 'Belum ada kunjungan',
-                    style: const TextStyle(fontSize: 11, color: textMuted),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Toggle Button / Status Action
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              // SIM Card Details
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: driver.isActive
-                        ? const Color(0x1F16A34A)
-                        : const Color(0x1FDC2626),
-                    borderRadius: BorderRadius.circular(8),
+                    color: isSimExp
+                        ? statusRed.withValues(alpha: 0.08)
+                        : (isSimSoon ? brandYellowSoft : surfaceMuted),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: driver.isActive
-                          ? const Color(0x4D16A34A)
-                          : const Color(0x4DDC2626),
+                      color: isSimExp
+                          ? statusRed.withValues(alpha: 0.3)
+                          : (isSimSoon ? brandYellowDark.withValues(alpha: 0.3) : borderColor),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
-                          shape: BoxShape.circle,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.badge_rounded,
+                            size: 14,
+                            color: isSimExp
+                                ? statusRed
+                                : (isSimSoon ? brandYellowDark : brandBlue),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            driver.simNumber.isNotEmpty ? driver.simNumber : 'SIM Tidak Tercatat',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isSimExp ? statusRed : textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        driver.isActive ? 'AKTIF' : 'NONAKTIF',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
-                          letterSpacing: 0.5,
-                        ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Text(
+                            driver.simExpiresAt != null
+                                ? 'Exp: ${_formatDate(driver.simExpiresAt)}'
+                                : 'Exp: Tidak Ditentukan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isSimExp
+                                  ? statusRed
+                                  : (isSimSoon ? brandYellowDark : textMuted),
+                            ),
+                          ),
+                          if (isSimExp) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: statusRed,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'KEDALUWARSA',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ] else if (isSimSoon) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: brandYellowDark,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'SEGERA HABIS',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 32,
-                  child: OutlinedButton.icon(
+              ),
+              const SizedBox(width: 16),
+
+              // Trips / Activity Info
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.local_shipping_outlined, size: 14, color: textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${driver.totalTrips} Kali Masuk',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      driver.lastVisit != null
+                          ? 'Terakhir: ${_formatDate(driver.lastVisit)}'
+                          : 'Belum ada kunjungan',
+                      style: const TextStyle(fontSize: 11, color: textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Buttons / Status Action
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: driver.isActive ? statusRed : const Color(0xFF16A34A),
-                      side: BorderSide(
-                        color: driver.isActive
-                            ? statusRed.withValues(alpha: 0.6)
-                            : const Color(0xFF16A34A).withValues(alpha: 0.6),
+                      foregroundColor: brandBlue,
+                      side: const BorderSide(color: brandBlue, width: 1.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => _showDriverProfile(driver),
+                    icon: const Icon(Icons.person_pin_rounded, size: 16),
+                    label: const Text('Lihat Profil', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: driver.isActive
+                              ? const Color(0x1F16A34A)
+                              : const Color(0x1FDC2626),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: driver.isActive
+                                ? const Color(0x4D16A34A)
+                                : const Color(0x4DDC2626),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              driver.isActive ? 'AKTIF' : 'NONAKTIF',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        height: 28,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            foregroundColor: driver.isActive ? statusRed : const Color(0xFF16A34A),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          onPressed: () => _toggleActive(driver),
+                          icon: Icon(
+                            driver.isActive ? Icons.block_rounded : Icons.check_circle_rounded,
+                            size: 13,
+                          ),
+                          label: Text(
+                            driver.isActive ? 'Nonaktifkan' : 'Aktifkan',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Komponen Avatar Foto Profil Transporter dengan Fallback Inisial & Indikator Status
+  Widget _buildDriverAvatar(
+    TransporterDriver driver, {
+    double size = 52,
+    bool showStatusBadge = true,
+    VoidCallback? onPhotoTap,
+  }) {
+    final photoUrl = widget.client.resolvePhotoUrl(driver.photoUrl);
+
+    Widget avatarImage;
+    if (photoUrl.isNotEmpty) {
+      avatarImage = Image.network(
+        photoUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildInitialsFallback(driver, size),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: size * 0.35,
+              height: size * 0.35,
+              child: const CircularProgressIndicator(strokeWidth: 2, color: brandBlue),
+            ),
+          );
+        },
+      );
+    } else {
+      avatarImage = _buildInitialsFallback(driver, size);
+    }
+
+    final avatarBox = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: driver.isActive ? brandBlueSoft : surfaceMuted,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: driver.isActive ? brandBlue.withValues(alpha: 0.3) : borderColor,
+          width: 1.5,
+        ),
+      ),
+      child: ClipOval(child: avatarImage),
+    );
+
+    return Stack(
+      children: [
+        if (onPhotoTap != null)
+          Tooltip(
+            message: photoUrl.isNotEmpty ? 'Klik untuk perbesar foto profil' : 'Foto profil belum tersedia',
+            child: InkWell(
+              onTap: onPhotoTap,
+              customBorder: const CircleBorder(),
+              child: avatarBox,
+            ),
+          )
+        else
+          avatarBox,
+        if (showStatusBadge)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: size * 0.28,
+              height: size * 0.28,
+              decoration: BoxDecoration(
+                color: driver.isActive ? const Color(0xFF16A34A) : statusRed,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInitialsFallback(TransporterDriver driver, double size) {
+    return Container(
+      width: size,
+      height: size,
+      color: driver.isActive ? brandBlueSoft : surfaceMuted,
+      child: Center(
+        child: Text(
+          driver.fullName.isNotEmpty
+              ? driver.fullName.substring(0, 1).toUpperCase()
+              : 'S',
+          style: TextStyle(
+            fontSize: size * 0.4,
+            fontWeight: FontWeight.w900,
+            color: driver.isActive ? brandBlue : textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Dialog Rincian Profil Sopir Transporter Lengkap
+  Future<void> _showDriverProfile(TransporterDriver driver) async {
+    final photoUrl = widget.client.resolvePhotoUrl(driver.photoUrl);
+    final isSimExp = driver.isSimExpired;
+    final isSimSoon = driver.isSimExpiringSoon;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            width: 620,
+            constraints: const BoxConstraints(maxHeight: 720),
+            decoration: BoxDecoration(
+              color: panelColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: borderColor),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 30,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header Banner Garudafood
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  decoration: const BoxDecoration(
+                    color: brandBlue,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                    onPressed: () => _toggleActive(driver),
-                    icon: Icon(
-                      driver.isActive ? Icons.block_rounded : Icons.check_circle_rounded,
-                      size: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.badge_rounded, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'PROFIL RESMI TRANSPORTER',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              'Identitas pengemudi armada logistik rekanan Garudafood',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        tooltip: 'Tutup',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Isi Konten Profil
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Card Header Profil (Foto Besar & Nama)
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: surfaceMuted,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              // Foto Profil Utama (Diameter 100px)
+                              Stack(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (photoUrl.isNotEmpty) {
+                                        _showPhotoPreviewDialog(photoUrl, driver.fullName);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 100,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                        border: Border.all(color: brandBlue, width: 3),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x1F000000),
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipOval(
+                                        child: photoUrl.isNotEmpty
+                                            ? Image.network(
+                                                photoUrl,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, _, _) =>
+                                                    _buildInitialsFallback(driver, 100),
+                                              )
+                                            : _buildInitialsFallback(driver, 100),
+                                      ),
+                                    ),
+                                  ),
+                                  if (photoUrl.isNotEmpty)
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: const BoxDecoration(
+                                          color: brandBlue,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.zoom_in_rounded,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(width: 20),
+
+                              // Info Utama
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            driver.fullName,
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w900,
+                                              color: textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: driver.isActive
+                                                ? const Color(0x1F16A34A)
+                                                : const Color(0x1FDC2626),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: driver.isActive
+                                                  ? const Color(0xFF16A34A)
+                                                  : statusRed,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            driver.isActive ? 'AKUN AKTIF' : 'DINONAKTIFKAN',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w900,
+                                              color: driver.isActive
+                                                  ? const Color(0xFF16A34A)
+                                                  : statusRed,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: brandBlueSoft,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            driver.visitorCode.isNotEmpty
+                                                ? driver.visitorCode
+                                                : 'ID #${driver.id}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                              color: brandBlue,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            driver.company.isNotEmpty ? driver.company : 'Perusahaan Logistik',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: textSecondary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (photoUrl.isNotEmpty)
+                                      InkWell(
+                                        onTap: () => _showPhotoPreviewDialog(photoUrl, driver.fullName),
+                                        child: const Row(
+                                          children: [
+                                            Icon(Icons.image_search_rounded, size: 14, color: brandBlue),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Klik untuk melihat foto resolusi penuh',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: brandBlue,
+                                                fontWeight: FontWeight.w700,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      const Row(
+                                        children: [
+                                          Icon(Icons.info_outline_rounded, size: 14, color: textMuted),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Foto profil fisik belum direkam di database',
+                                            style: TextStyle(fontSize: 12, color: textMuted),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Section 1: Informasi Kontak & Lisensi Mengemudi (SIM)
+                        const Text(
+                          'DATA LISENSI & KONTAK RESMI',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildProfileRow(
+                                icon: Icons.badge_outlined,
+                                label: 'Nomor SIM Sopir',
+                                value: driver.simNumber.isNotEmpty ? driver.simNumber : 'Belum Tercatat',
+                              ),
+                              const Divider(height: 20, color: borderColor),
+                              _buildProfileRow(
+                                icon: Icons.event_available_outlined,
+                                label: 'Masa Berlaku SIM',
+                                value: driver.simExpiresAt != null
+                                    ? _formatDate(driver.simExpiresAt)
+                                    : 'Tidak Tercatat',
+                                badge: isSimExp
+                                    ? _buildBadge('KEDALUWARSA', statusRed)
+                                    : (isSimSoon ? _buildBadge('SEGERA HABIS', brandYellowDark) : _buildBadge('BERLAKU VALID', const Color(0xFF16A34A))),
+                              ),
+                              const Divider(height: 20, color: borderColor),
+                              _buildProfileRow(
+                                icon: Icons.phone_android_rounded,
+                                label: 'Nomor WhatsApp / HP',
+                                value: driver.phone.isNotEmpty ? driver.phone : 'Belum Tercatat',
+                                action: driver.phone.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.copy_rounded, size: 16, color: brandBlue),
+                                        tooltip: 'Salin nomor HP',
+                                        onPressed: () {
+                                          Clipboard.setData(ClipboardData(text: driver.phone));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Nomor ${driver.phone} disalin ke clipboard.'),
+                                              duration: const Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Section 2: Riwayat Operasional di Pabrik
+                        const Text(
+                          'RIWAYAT OPERASIONAL & KUNJUNGAN',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildProfileRow(
+                                icon: Icons.local_shipping_outlined,
+                                label: 'Total Kunjungan Armada',
+                                value: '${driver.totalTrips} Kali Check-in di Pabrik',
+                              ),
+                              const Divider(height: 20, color: borderColor),
+                              _buildProfileRow(
+                                icon: Icons.history_rounded,
+                                label: 'Kunjungan Terakhir',
+                                value: driver.lastVisit != null
+                                    ? _formatDate(driver.lastVisit)
+                                    : 'Belum pernah check-in',
+                              ),
+                              if (driver.createdAt != null) ...[
+                                const Divider(height: 20, color: borderColor),
+                                _buildProfileRow(
+                                  icon: Icons.app_registration_rounded,
+                                  label: 'Tanggal Terdaftar',
+                                  value: _formatDate(driver.createdAt),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    label: Text(
-                      driver.isActive ? 'Nonaktifkan' : 'Aktifkan',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+
+                // Footer Actions
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: surfaceMuted,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
                     ),
+                    border: Border(top: BorderSide(color: borderColor)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Tombol Toggle Aktif/Nonaktif di Modal
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: driver.isActive ? statusRed : const Color(0xFF16A34A),
+                          side: BorderSide(
+                            color: driver.isActive ? statusRed : const Color(0xFF16A34A),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          await _toggleActive(driver);
+                        },
+                        icon: Icon(
+                          driver.isActive ? Icons.block_rounded : Icons.check_circle_rounded,
+                          size: 16,
+                        ),
+                        label: Text(
+                          driver.isActive ? 'Nonaktifkan Akun Sopir' : 'Aktifkan Akun Sopir',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+
+                      // Tombol Tutup
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: brandBlue,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    Widget? badge,
+    Widget? action,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: brandBlue),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 6,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: textPrimary,
+                  ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (badge != null) ...[
+                const SizedBox(width: 8),
+                badge,
+              ],
+              if (action != null) ...[action],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color),
+      ),
+    );
+  }
+
+  /// Dialog Lightbox Tampilan Foto Penuh
+  void _showPhotoPreviewDialog(String fullUrl, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          width: 540,
+          decoration: BoxDecoration(
+            color: panelColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 40,
+                offset: Offset(0, 15),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: const BoxDecoration(
+                  color: brandBlue,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'FOTO PROFIL - $title',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    fullUrl,
+                    width: 480,
+                    height: 380,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 240,
+                      color: surfaceMuted,
+                      child: const Center(
+                        child: Text(
+                          'Gagal memuat foto dari server.',
+                          style: TextStyle(color: textMuted, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const SizedBox(
+                        height: 300,
+                        child: Center(
+                          child: CircularProgressIndicator(color: brandBlue),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20, right: 24),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Tutup'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

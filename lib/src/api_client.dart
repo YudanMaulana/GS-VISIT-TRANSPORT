@@ -225,6 +225,21 @@ class TransportApiClient {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
+  /// Ambil seluruh daftar pengunjung dari server
+  Future<List<Map<String, dynamic>>> fetchVisitors() async {
+    try {
+      final resp = await _client
+          .get(_uri('/api/visitors'), headers: _headers)
+          .timeout(const Duration(seconds: 20));
+      if (resp.statusCode != 200) return [];
+      final decoded = jsonDecode(resp.body);
+      if (decoded is List) {
+        return decoded.whereType<Map<String, dynamic>>().toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   /// Ambil daftar sopir transporter & status keaktifan akun
   Future<List<TransporterDriver>> fetchTransporterDrivers({
     String? search,
@@ -236,23 +251,53 @@ class TransportApiClient {
       if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
       if (isActive != null) 'is_active': '$isActive',
     };
-    final resp = await _client
-        .get(_uri('/api/transporter/drivers', query), headers: _headers)
-        .timeout(const Duration(seconds: 20));
-    if (resp.statusCode != 200) return [];
-    final decoded = jsonDecode(resp.body);
-    final List<dynamic> list;
-    if (decoded is List) {
-      list = decoded;
-    } else if (decoded is Map<String, dynamic> && decoded['drivers'] is List) {
-      list = decoded['drivers'] as List<dynamic>;
-    } else {
-      list = const [];
+    try {
+      final resp = await _client
+          .get(_uri('/api/transporter/drivers', query), headers: _headers)
+          .timeout(const Duration(seconds: 15));
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        final List<dynamic> list;
+        if (decoded is List) {
+          list = decoded;
+        } else if (decoded is Map<String, dynamic> && decoded['drivers'] is List) {
+          list = decoded['drivers'] as List<dynamic>;
+        } else {
+          list = const [];
+        }
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map((j) => TransporterDriver.fromJson(j))
+            .toList();
+      }
+    } catch (_) {
+      // Abaikan dan lanjutkan ke fallback di bawah jika endpoint khusus belum aktif di server
     }
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map((j) => TransporterDriver.fromJson(j))
-        .toList();
+
+    // Fallback: Jika endpoint /api/transporter/drivers belum tersedia di server (misal HTTP 404),
+    // ambil data langsung dari /api/visitors dan filter visitor_type == 'transporter'
+    try {
+      final allVisitors = await fetchVisitors();
+      var drivers = allVisitors
+          .where((v) =>
+              (v['visitor_type']?.toString().trim().toLowerCase() ?? '') ==
+              'transporter')
+          .map((j) => TransporterDriver.fromJson(j))
+          .toList();
+
+      if (isActive != null) {
+        drivers = drivers.where((d) => d.isActive == isActive).toList();
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        drivers = drivers.where((d) => d.matches(search)).toList();
+      }
+      if (drivers.length > limit) {
+        drivers = drivers.sublist(0, limit);
+      }
+      return drivers;
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Aktifkan atau nonaktifkan profil sopir transporter
@@ -261,16 +306,40 @@ class TransportApiClient {
     required bool isActive,
     String? reason,
   }) async {
-    final resp = await _client
-        .patch(
-          _uri('/api/transporter/drivers/$visitorId/toggle-active'),
-          headers: _headers,
-          body: jsonEncode({
-            'is_active': isActive,
-            if (reason != null && reason.isNotEmpty) 'reason': reason,
-          }),
-        )
-        .timeout(const Duration(seconds: 20));
-    return jsonDecode(resp.body) as Map<String, dynamic>;
+    try {
+      final resp = await _client
+          .patch(
+            _uri('/api/transporter/drivers/$visitorId/toggle-active'),
+            headers: _headers,
+            body: jsonEncode({
+              'is_active': isActive,
+              if (reason != null && reason.isNotEmpty) 'reason': reason,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+      if (resp.statusCode == 200) {
+        return jsonDecode(resp.body) as Map<String, dynamic>;
+      }
+      if (resp.statusCode == 404) {
+        return {
+          'success': false,
+          'message':
+              'Fitur toggle status belum aktif di server produksi. Silakan jalankan git pull & restart server.',
+        };
+      }
+      final decoded = jsonDecode(resp.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {
+        'success': false,
+        'message': 'Gagal memperbarui status (${resp.statusCode}).',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal menghubungi server: $e',
+      };
+    }
   }
 }

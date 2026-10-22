@@ -174,6 +174,28 @@ void main() {
       expect(driverExpired.id, 16);
       expect(driverExpired.isActive, isFalse);
       expect(driverExpired.isSimExpired, isTrue);
+
+      // Skenario sopir baru mendaftar dari /api/visitors (belum ada trip/bongkar muat & is_active null)
+      final newRegisteredDriver = TransporterDriver.fromJson({
+        'id': 20,
+        'visitor_code': 'V-000020',
+        'visitor_type': 'transporter',
+        'full_name': 'YUDAN',
+        'company': 'PT VELTRIX TECH',
+        'phone': '08986244418',
+        'sim_number': '1234567890987',
+        'sim_expires_at': '2026-10-31',
+        'created_at': '2026-10-22T07:40:43.519112+00:00',
+        'photo_url': '/photos/register/V-000020_c7731bf8.jpg',
+      });
+
+      expect(newRegisteredDriver.id, 20);
+      expect(newRegisteredDriver.visitorCode, 'V-000020');
+      expect(newRegisteredDriver.fullName, 'YUDAN');
+      expect(newRegisteredDriver.company, 'PT VELTRIX TECH');
+      expect(newRegisteredDriver.isActive, isTrue);
+      expect(newRegisteredDriver.totalTrips, 0);
+      expect(newRegisteredDriver.matches('veltrix'), isTrue);
     });
   });
 }

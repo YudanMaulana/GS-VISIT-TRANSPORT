@@ -13,10 +13,10 @@ import 'src/pages/transporter_drivers_page.dart';
 import 'src/pages/transporter_loads_page.dart';
 import 'src/pages/transporter_support_page.dart';
 import 'src/theme.dart';
-import 'src/widgets/admin_login_dialog.dart';
 import 'src/widgets/common_widgets.dart';
 import 'src/widgets/header.dart';
 import 'src/widgets/sidebar.dart';
+import 'src/widgets/transporter_login_screen.dart';
 
 const List<NavPageItem> transportNavItems = [
   NavPageItem(
@@ -154,25 +154,6 @@ class _TransportHomePageState extends State<TransportHomePage> {
     if (mounted) setState(() => _initializing = false);
   }
 
-  void _openLogin() async {
-    final unlocked = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) =>
-          AdminLoginDialog(config: widget.config, session: _session),
-    );
-
-    if (unlocked == true && mounted) {
-      setState(() {
-        _client = TransportApiClient(
-          baseUrl: widget.config.baseUrl,
-          adminToken: _session.token,
-        );
-        _statusText = 'Operator terhubung sebagai ${_session.email}.';
-      });
-    }
-  }
-
   void _logout() async {
     _session.lock();
     await widget.config.clearAuth();
@@ -180,6 +161,148 @@ class _TransportHomePageState extends State<TransportHomePage> {
       setState(() {
         _statusText = 'Sesi terkunci. Silakan masuk untuk melanjutkan.';
       });
+    }
+  }
+
+  /// Menampilkan popup konfirmasi sebelum keluar untuk mencegah salah klik tidak sengaja.
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFDC2626),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Konfirmasi Logout',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Sesi Petugas Transporter',
+                    style: TextStyle(
+                      color: textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Apakah Anda yakin ingin keluar dari sesi petugas Transporter?',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_rounded,
+                      size: 16, color: brandBlue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _session.email.isNotEmpty
+                          ? _session.email
+                          : 'Akun Petugas Aktif',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: brandBlueDeep,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Sistem gerbang akan terkunci dan memerlukan login ulang dengan akun Google petugas untuk mengakses menu operasional.',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 12.5,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: textPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+            ),
+            child:
+                const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.logout_rounded, size: 16),
+            label: const Text('Ya, Logout',
+                style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _logout();
     }
   }
 
@@ -291,7 +414,7 @@ class _TransportHomePageState extends State<TransportHomePage> {
                                     ? 'Cabang #${widget.config.branchId}'
                                     : 'Sumedang Plant'),
                             operatorEmail: _session.email,
-                            onLogout: _logout,
+                            onLogout: _confirmLogout,
                           ),
                           const SizedBox(height: 20),
                           Expanded(
@@ -357,123 +480,15 @@ class _TransportHomePageState extends State<TransportHomePage> {
 
   Widget _buildLockScreen() {
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF5F8FF), Color(0xFFEFF4FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Container(
-            width: 480,
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: borderColor),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1F0F3D91),
-                  blurRadius: 36,
-                  offset: Offset(0, 14),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: brandYellow.withValues(alpha: 0.72),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: brandYellow.withValues(alpha: 0.25),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                      const BoxShadow(
-                        color: Color(0x14000000),
-                        blurRadius: 16,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/branding/logo.png',
-                    height: 58,
-                    width: 58,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.local_shipping_rounded,
-                      size: 48,
-                      color: brandBlue,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 22),
-                const Text(
-                  'GARUDASHIELD',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'TRANSPORTER GATE DESK',
-                  style: TextStyle(
-                    color: brandBlue,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Sistem Manajemen Gerbang Logistik & Transporter\nPT. GARUDAFOOD PUTRA PUTRI JAYA Tbk.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _openLogin,
-                    icon: const Icon(Icons.login_rounded, size: 20),
-                    label: const Text(
-                      'Masuk dengan Akun Google Petugas',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: brandBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      body: TransporterLoginScreen(
+        config: widget.config,
+        session: _session,
+        onLoginSuccess: (session, client) {
+          setState(() {
+            _client = client;
+            _statusText = 'Operator terhubung sebagai ${session.email}.';
+          });
+        },
       ),
     );
   }

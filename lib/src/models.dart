@@ -885,7 +885,9 @@ class ActiveGuestRow {
       photoUrl: (j['photo_url'] as String?)?.isNotEmpty == true
           ? j['photo_url'] as String
           : ((j['photo_path'] as String?)?.isNotEmpty == true
-              ? '/photos/'
+              ? (j['photo_path'].toString().startsWith('/')
+                  ? j['photo_path'].toString()
+                  : '/photos/${j['photo_path']}')
               : ''),
       checkinAt: _serverDate(j['checkin_at']),
       checkoutAt: _serverDate(j['checkout_at']),
@@ -989,7 +991,9 @@ class PlanRow {
       photoUrl: (v['photo_url'] as String?)?.isNotEmpty == true
           ? v['photo_url'] as String
           : ((v['photo_path'] as String?)?.isNotEmpty == true
-              ? '/photos/'
+              ? (v['photo_path'].toString().startsWith('/')
+                  ? v['photo_path'].toString()
+                  : '/photos/${v['photo_path']}')
               : ''),
       branchName: b['name'] as String? ?? '',
       picTarget: j['pic_target'] as String? ?? '',
@@ -1431,7 +1435,9 @@ class TransporterDriver {
     final rawPhoto = (j['photo_url'] as String?)?.isNotEmpty == true
         ? j['photo_url'] as String
         : ((j['photo_path'] as String?)?.isNotEmpty == true
-            ? '/photos/'
+            ? (j['photo_path'].toString().startsWith('/')
+                ? j['photo_path'].toString()
+                : '/photos/${j['photo_path']}')
             : null);
 
     return TransporterDriver(

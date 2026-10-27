@@ -171,8 +171,12 @@ class _TransporterLoadsPageState extends State<TransporterLoadsPage> {
                               if (rawDate.isNotEmpty) {
                                 final parsed = DateTime.tryParse(rawDate);
                                 if (parsed != null) {
-                                  dateFormatted =
-                                      '/ :';
+                                  final local = parsed.toLocal();
+                                  final d = local.day.toString().padLeft(2, '0');
+                                  final m = local.month.toString().padLeft(2, '0');
+                                  final hr = local.hour.toString().padLeft(2, '0');
+                                  final min = local.minute.toString().padLeft(2, '0');
+                                  dateFormatted = '$d/$m/${local.year} $hr:$min';
                                 }
                               }
 

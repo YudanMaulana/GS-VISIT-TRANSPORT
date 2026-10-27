@@ -4,7 +4,6 @@ import '../api_client.dart';
 import '../config.dart';
 import '../google_desktop_auth.dart';
 import '../theme.dart';
-import 'common_widgets.dart';
 
 /// Halaman Login Gerbang Transporter dengan estetika Split Screen Neon Dark Tech
 /// terinspirasi dari FaceID Windows Desktop (Garuda Shield).
@@ -25,25 +24,8 @@ class TransporterLoginScreen extends StatefulWidget {
 }
 
 class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
-  late final TextEditingController _serverUrl =
-      TextEditingController(text: widget.config.baseUrl);
-  late final TextEditingController _clientId =
-      TextEditingController(text: widget.config.googleClientId);
-  late final TextEditingController _clientSecret =
-      TextEditingController(text: widget.config.googleClientSecret);
-
   bool _busy = false;
   String? _error;
-  bool _showSettings = false;
-  String? _settingsFeedback;
-
-  @override
-  void dispose() {
-    _serverUrl.dispose();
-    _clientId.dispose();
-    _clientSecret.dispose();
-    super.dispose();
-  }
 
   Future<void> _loginGoogle() async {
     setState(() {
@@ -52,13 +34,13 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
     });
 
     try {
-      final cId = _clientId.text.trim();
-      final cSec = _clientSecret.text.trim();
-      final sUrl = _serverUrl.text.trim();
+      final cId = widget.config.googleClientId.trim();
+      final cSec = widget.config.googleClientSecret.trim();
+      final sUrl = widget.config.baseUrl.trim();
 
       if (cId.isEmpty) {
         throw Exception(
-          'Google Client ID belum diatur. Klik ikon roda gigi di pojok kanan atas untuk mengisi pengaturan OAuth.',
+          'Google Client ID belum terkonfigurasi pada sistem.',
         );
       }
 
@@ -83,10 +65,6 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
       final token = result['token']?.toString() ?? '';
       final branchId = result['branch_id'] is int ? result['branch_id'] as int : null;
 
-      // Simpan konfigurasi
-      widget.config.baseUrl = sUrl;
-      widget.config.googleClientId = cId;
-      widget.config.googleClientSecret = cSec;
       await widget.config.saveAuth(
         email: email,
         token: token,
@@ -116,35 +94,6 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
           _busy = false;
         });
       }
-    }
-  }
-
-  void _saveSettings() async {
-    final sUrl = _serverUrl.text.trim();
-    final cId = _clientId.text.trim();
-    final cSec = _clientSecret.text.trim();
-
-    widget.config.baseUrl = sUrl;
-    widget.config.googleClientId = cId;
-    widget.config.googleClientSecret = cSec;
-    await widget.config.save();
-
-    if (mounted) {
-      setState(() {
-        _settingsFeedback = 'Pengaturan server & kredensial berhasil disimpan!';
-      });
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _settingsFeedback = null);
-      });
-    }
-  }
-
-  String _cleanHost(String url) {
-    try {
-      final u = Uri.parse(url);
-      return u.host.isNotEmpty ? u.host : url;
-    } catch (_) {
-      return url;
     }
   }
 
@@ -389,7 +338,7 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
                     ),
 
                     // ============================================
-                    // PANEL KANAN: FORM LOGIN & PENGATURAN (LIGHT)
+                    // PANEL KANAN: FORM LOGIN PETUGAS (LIGHT)
                     // ============================================
                     Expanded(
                       flex: 5,
@@ -402,98 +351,9 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Header Top: Status Koneksi & Tombol Pengaturan
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Status chip
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F6FF),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: const Color(0xFFD4E3FC),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 7,
-                                        height: 7,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF16A34A),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _cleanHost(_serverUrl.text.trim()),
-                                        style: const TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: brandBlueDeep,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Tombol Roda Gigi Pengaturan
-                                Tooltip(
-                                  message: _showSettings
-                                      ? 'Kembali ke Form Login'
-                                      : 'Pengaturan Server & OAuth',
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(12),
-                                      onTap: () {
-                                        setState(() {
-                                          _showSettings = !_showSettings;
-                                          _error = null;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: _showSettings
-                                              ? brandBlueSoft
-                                              : Colors.grey.shade100,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: _showSettings
-                                                ? brandBlue
-                                                : borderColor,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          _showSettings
-                                              ? Icons.close_rounded
-                                              : Icons.settings_outlined,
-                                          size: 18,
-                                          color: _showSettings
-                                              ? brandBlue
-                                              : textMuted,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
                             const Spacer(),
 
-                            // VIEW PENGATURAN SERVER / VIEW LOGIN
-                            if (_showSettings)
-                              _buildSettingsView()
-                            else
-                              _buildMainLoginView(),
+                            _buildMainLoginView(),
 
                             const Spacer(),
 
@@ -711,113 +571,6 @@ class _TransporterLoginScreenState extends State<TransporterLoginScreen> {
             ],
           ),
         ],
-      ],
-    );
-  }
-
-  /// Tampilan Pengaturan Server & Kredensial OAuth
-  Widget _buildSettingsView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.settings_outlined, color: brandBlue, size: 22),
-                SizedBox(width: 8),
-                Text(
-                  'Pengaturan Server & OAuth',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-            TextButton(
-              onPressed: () => setState(() => _showSettings = false),
-              child: const Text('Batal'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Konfigurasi alamat server backend API dan kredensial OAuth Google Desktop.',
-          style: TextStyle(color: textMuted, fontSize: 12, height: 1.4),
-        ),
-        const SizedBox(height: 16),
-        if (_settingsFeedback != null) ...[
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF16A34A), size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _settingsFeedback!,
-                    style: const TextStyle(
-                      color: Color(0xFF16A34A),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        InputField(
-          label: 'URL Server Backend',
-          controller: _serverUrl,
-          hintText: 'https://garudafood.choclatosxquest.web.id/garudafood-visit',
-          prefixIcon: Icons.dns_rounded,
-        ),
-        const SizedBox(height: 10),
-        InputField(
-          label: 'Google Client ID (Desktop)',
-          controller: _clientId,
-          hintText: 'xxxxxx.apps.googleusercontent.com',
-          prefixIcon: Icons.key_rounded,
-        ),
-        const SizedBox(height: 10),
-        InputField(
-          label: 'Google Client Secret',
-          controller: _clientSecret,
-          hintText: 'GOCSPX-xxxxxx',
-          prefixIcon: Icons.lock_outline_rounded,
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: _saveSettings,
-            style: FilledButton.styleFrom(
-              backgroundColor: brandBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.save_rounded, size: 18),
-            label: const Text(
-              'Simpan Pengaturan',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
-            ),
-          ),
-        ),
       ],
     );
   }

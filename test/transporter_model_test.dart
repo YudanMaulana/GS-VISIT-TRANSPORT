@@ -197,6 +197,29 @@ void main() {
       expect(newRegisteredDriver.totalTrips, 0);
       expect(newRegisteredDriver.matches('veltrix'), isTrue);
     });
+
+    test('ActiveGuestRow parses goods data (data barang) and computes goodsSummary', () {
+      final jsonWithGoods = {
+        'plan_id': 201,
+        'visitor_id': 60,
+        'name': 'Agus Sopir',
+        'company': 'PT Cepat Logistik',
+        'status': 'checked_in',
+        'load_type': 'bongkar',
+        'first_shipment_no': 'SJ-10029',
+        'first_goods_name': 'Kacang Kulit Garuda',
+        'first_quantity': '10 Pallet (5 Ton)',
+        'load_count': 2,
+        'checkin_at': '2026-10-28T03:30:00Z',
+      };
+
+      final row = ActiveGuestRow.fromJson(jsonWithGoods);
+      expect(row.firstShipmentNo, 'SJ-10029');
+      expect(row.firstGoodsName, 'Kacang Kulit Garuda');
+      expect(row.firstQuantity, '10 Pallet (5 Ton)');
+      expect(row.goodsSummary, 'Kacang Kulit Garuda (10 Pallet (5 Ton))');
+      expect(row.loadCount, 2);
+    });
   });
 }
 

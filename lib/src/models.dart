@@ -819,6 +819,8 @@ class ActiveGuestRow {
   /// Papan adalah daftar, bukan surat jalan: sisanya dibuka di detail.
   final int loadCount;
   final String firstShipmentNo;
+  final String firstGoodsName;
+  final String firstQuantity;
   final int? queueNumber;
   final int? areaId;
   final String areaName;
@@ -830,6 +832,23 @@ class ActiveGuestRow {
       status == 'expired' || status == 'cancelled' || status == 'batal';
   PlantAreaCategory get areaCategory =>
       PlantAreaCategory.fromCodeOrName(areaCode, areaName);
+
+  String get goodsSummary {
+    if (firstGoodsName.isNotEmpty) {
+      if (firstQuantity.isNotEmpty) {
+        return '$firstGoodsName ($firstQuantity)';
+      }
+      return firstGoodsName;
+    }
+    final p = purpose.trim();
+    if (p.isNotEmpty &&
+        p.toLowerCase() != 'kunjungan' &&
+        p.toLowerCase() != 'bongkar/muat' &&
+        p.toLowerCase() != 'tamu') {
+      return p;
+    }
+    return '';
+  }
 
   ActiveGuestRow({
     required this.planId,
@@ -855,6 +874,8 @@ class ActiveGuestRow {
     this.loadType = '',
     this.loadCount = 0,
     this.firstShipmentNo = '',
+    this.firstGoodsName = '',
+    this.firstQuantity = '',
     this.queueNumber,
     this.areaId,
     this.areaName = '',
@@ -903,6 +924,8 @@ class ActiveGuestRow {
       loadType: j['load_type'] as String? ?? '',
       loadCount: (j['load_count'] as num?)?.toInt() ?? 0,
       firstShipmentNo: j['first_shipment_no'] as String? ?? '',
+      firstGoodsName: j['first_goods_name'] as String? ?? (j['goods_name'] as String? ?? ''),
+      firstQuantity: j['first_quantity'] as String? ?? (j['quantity'] as String? ?? ''),
       queueNumber: qNum,
       areaId: (j['area_id'] as num?)?.toInt() ??
           (j['area'] is Map ? ((j['area'] as Map)['id'] as num?)?.toInt() : null),

@@ -48,6 +48,8 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
 
   PlantAreaCategory _selectedArea = PlantAreaCategory.all;
 
+  bool _onlyActiveInArea = true;
+
   @override
   void initState() {
     super.initState();
@@ -82,14 +84,35 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
     }
   }
 
-  String _formatTime(DateTime? dt) {
+  String _formatDateTime(DateTime? dt) {
     if (dt == null) return '-';
+    final local = dt.toLocal();
+    final d = local.day.toString().padLeft(2, '0');
+    final m = _monthShort(local.month);
+    final y = local.year;
+    final h = local.hour.toString().padLeft(2, '0');
+    final min = local.minute.toString().padLeft(2, '0');
+    return '$d $m $y, $h:$min';
+  }
 
-    final h = dt.hour.toString().padLeft(2, '0');
-
-    final m = dt.minute.toString().padLeft(2, '0');
-
-    return '$h:$m';
+  String _monthShort(int month) {
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
+    if (month >= 1 && month <= 12) return months[month];
+    return '';
   }
 
   List<ActiveGuestRow> get _filtered {
@@ -100,6 +123,12 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
           row.loadType.isEmpty &&
           row.vehiclePlate.isEmpty) {
         return false;
+      }
+
+      if (_onlyActiveInArea) {
+        if (row.checkoutAt != null || row.status == 'checked_out') {
+          return false;
+        }
       }
 
       if (_selectedArea != PlantAreaCategory.all &&
@@ -113,23 +142,31 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
           row.company.toLowerCase().contains(q) ||
           row.vehiclePlate.toLowerCase().contains(q) ||
           row.areaName.toLowerCase().contains(q) ||
-          row.firstShipmentNo.toLowerCase().contains(q);
+          row.firstShipmentNo.toLowerCase().contains(q) ||
+          row.firstGoodsName.toLowerCase().contains(q) ||
+          row.purpose.toLowerCase().contains(q);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = _transporters.length;
+    final pool = _onlyActiveInArea
+        ? _transporters
+            .where((r) => r.checkoutAt == null && r.status != 'checked_out')
+            .toList()
+        : _transporters;
 
-    final gfCount = _transporters
+    final totalCount = pool.length;
+
+    final gfCount = pool
         .where((r) => r.areaCategory == PlantAreaCategory.garudafood)
         .length;
 
-    final dcCount = _transporters
+    final dcCount = pool
         .where((r) => r.areaCategory == PlantAreaCategory.dc)
         .length;
 
-    final mbrCount = _transporters
+    final mbrCount = pool
         .where((r) => r.areaCategory == PlantAreaCategory.mbr)
         .length;
 
@@ -296,6 +333,34 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
 
                     _buildChip(PlantAreaCategory.mbr, 'MBR ($mbrCount)'),
                   ],
+                ),
+
+                const SizedBox(width: 14),
+
+                FilterChip(
+                  label: Text(
+                    _onlyActiveInArea ? 'Di Area Saja' : 'Semua (Termasuk Keluar)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _onlyActiveInArea ? brandBlue : textMuted,
+                    ),
+                  ),
+                  avatar: Icon(
+                    _onlyActiveInArea ? Icons.local_shipping_rounded : Icons.history_rounded,
+                    size: 16,
+                    color: _onlyActiveInArea ? brandBlue : textMuted,
+                  ),
+                  selected: _onlyActiveInArea,
+                  onSelected: (val) => setState(() => _onlyActiveInArea = val),
+                  backgroundColor: panelColor,
+                  selectedColor: brandBlue.withValues(alpha: 0.12),
+                  side: BorderSide(
+                    color: _onlyActiveInArea ? brandBlue : borderColor,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
 
                 const SizedBox(width: 14),
@@ -634,7 +699,7 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
                                         ),
 
                                       Text(
-                                        '• Masuk: ${_formatTime(row.checkinAt)}',
+                                        '• Masuk: ${_formatDateTime(row.checkinAt)}',
 
                                         style: const TextStyle(
                                           color: textMuted,
@@ -644,8 +709,93 @@ class _TransporterAreaPageState extends State<TransporterAreaPage> {
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
+
+                                      if (row.checkoutAt != null || row.status == 'checked_out')
+                                        Text(
+                                          '• Keluar: ${_formatDateTime(row.checkoutAt)}',
+
+                                          style: const TextStyle(
+                                            color: Color(0xFFE53935),
+
+                                            fontSize: 12.5,
+
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                     ],
                                   ),
+
+                                  if (row.goodsSummary.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1E88E5).withValues(alpha: 0.08),
+
+                                        borderRadius: BorderRadius.circular(10),
+
+                                        border: Border.all(
+                                          color: const Color(0xFF1E88E5).withValues(alpha: 0.22),
+                                        ),
+                                      ),
+
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+
+                                        children: [
+                                          const Icon(
+                                            Icons.inventory_2_rounded,
+                                            size: 14,
+                                            color: Color(0xFF1565C0),
+                                          ),
+
+                                          const SizedBox(width: 6),
+
+                                          Flexible(
+                                            child: Text(
+                                              'Barang: ${row.goodsSummary}',
+                                              style: const TextStyle(
+                                                color: Color(0xFF0D47A1),
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+
+                                          if (row.loadCount > 1) ...[
+                                            const SizedBox(width: 6),
+
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF1565C0),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+
+                                              child: Text(
+                                                '+${row.loadCount - 1} muatan',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
